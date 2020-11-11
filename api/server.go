@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/gunturbudikurniawan/Artaka-Show-Sleep-Merchants/api/controllers"
+	"github.com/gunturbudikurniawan/Artaka/api/controllers"
 	"github.com/joho/godotenv"
 )
 
