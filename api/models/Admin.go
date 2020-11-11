@@ -17,7 +17,7 @@ type Admin struct {
 	ID              uint32          `gorm:"primary_key;auto_increment" json:"id"`
 	Phone           string          `gorm:"size:100;" json:"phone"`
 	Username        string          `gorm:"size:255;not null;unique" json:"username"`
-	Create_dtm      time.Time       `json:"create_dtm"`
+	Create_dtm      time.Time       `gorm:"default:CURRENT_TIMESTAMP" json:"create_dtm`
 	Email           string          `gorm:"size:100;not null;unique" json:"email"`
 	Secret_password string          `json:"secret_password"`
 	Idcard_image    json.RawMessage `json:"idcard_image"`
@@ -129,14 +129,16 @@ func (a *Admin) UpdateAdmin(db *gorm.DB, uid uint32) (*Admin, error) {
 
 		db = db.Debug().Model(&Admin{}).Where("id = ?", uid).Take(&Admin{}).UpdateColumns(
 			map[string]interface{}{
-				"password": a.Secret_password,
-				"email":    a.Email,
+				"secret_password": a.Secret_password,
+				"email":           a.Email,
+				"create_dtm":      time.Now(),
 			},
 		)
 	}
 	db = db.Debug().Model(&Admin{}).Where("id = ?", uid).Take(&Admin{}).UpdateColumns(
 		map[string]interface{}{
-			"email": a.Email,
+			"email":      a.Email,
+			"create_dtm": time.Now(),
 		},
 	)
 	if db.Error != nil {

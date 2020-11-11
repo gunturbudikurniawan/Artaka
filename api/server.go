@@ -33,7 +33,7 @@ func Run() {
 	apiPort := os.Getenv("PORT")
 	fmt.Printf("Listening to port %s", apiPort)
 	if apiPort == "" {
-		apiPort = "8085"
+		apiPort = "8087"
 	}
 	server.Run(":" + apiPort)
 }
