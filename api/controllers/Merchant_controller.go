@@ -405,7 +405,7 @@ func (server *Server) CreateSales(c *gin.Context) {
 		})
 		return
 	}
-	saveSales.User_id = merchant.User_id
+	saveSales.UserID = merchant.User_id
 	saveSales.Prepare()
 
 	errorMessages := saveSales.Validate()

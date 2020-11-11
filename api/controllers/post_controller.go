@@ -330,23 +330,23 @@ func (server *Server) GetUserPosts(c *gin.Context) {
 	})
 }
 
-// func (server *Server) GetShow(c *gin.Context) {
+func (server *Server) GetShow(c *gin.Context) {
 
-// 	err, datas := models.Show(server.DB)
+	err, datas := models.Show(server.DB)
 
-// 	if err != nil {
-// 		log.Println(err)
-// 		errList["No_Transaction"] = "No Tansaction Found"
-// 		c.JSON(http.StatusNotFound, gin.H{
-// 			"status":   http.StatusNotFound,
-// 			"error":    errList,
-// 			"response": "null",
-// 		})
-// 		return
-// 	}
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"status":   http.StatusOK,
-// 		"response": datas,
-// 		"error":    "null",
-// 	})
-// }
+	if err != nil {
+		log.Println(err)
+		errList["No_Transaction"] = "No Tansaction Found"
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":   http.StatusNotFound,
+			"error":    errList,
+			"response": "null",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status":   http.StatusOK,
+		"response": datas,
+		"error":    "null",
+	})
+}
