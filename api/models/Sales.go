@@ -1,10 +1,8 @@
 package models
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html"
 	"strings"
 	"time"
@@ -90,43 +88,44 @@ func (w *Sales) FindSales(db *gorm.DB) (*Sales, error) {
 	}
 	return w, err
 }
-func Show(db *gorm.DB) (error, []Data) {
-	var datas []Data
 
-	rows, err := db.Raw(`SELECT user_id, owner_name, email, Z.create_dtm as last_trx FROM (
-		SELECT user_id,owner_name, email, (SELECT create_dtm FROM sales WHERE create_dtm > current_date-7 AND user_id = b.user_id ORDER BY id DESC LIMIT 1) FROM subscribers b
-		UNION SELECT user_id, owner_name, email, (SELECT create_dtm FROM onlinesales WHERE create_dtm > current_date-7 AND user_id = b.user_id ORDER BY id DESC LIMIT 1) FROM subscribers b
-		UNION SELECT user_id, owner_name, email, (SELECT create_dtm FROM saved_orders so WHERE create_dtm > current_date-7 AND user_id = b.user_id ORDER BY id DESC LIMIT 1) FROM subscribers b) AS Z`).Rows()
+// func Show(db *gorm.DB) (error, []Data) {
+// 	var datas []Data
 
-	if err != nil {
-		fmt.Errorf("%v", err)
-		return err, datas
-	}
+// 	rows, err := db.Raw(`SELECT user_id, owner_name, email, Z.create_dtm as last_trx FROM (
+// 		SELECT user_id,owner_name, email, (SELECT create_dtm FROM sales WHERE create_dtm > current_date-7 AND user_id = b.user_id ORDER BY id DESC LIMIT 1) FROM subscribers b
+// 		UNION SELECT user_id, owner_name, email, (SELECT create_dtm FROM onlinesales WHERE create_dtm > current_date-7 AND user_id = b.user_id ORDER BY id DESC LIMIT 1) FROM subscribers b
+// 		UNION SELECT user_id, owner_name, email, (SELECT create_dtm FROM saved_orders so WHERE create_dtm > current_date-7 AND user_id = b.user_id ORDER BY id DESC LIMIT 1) FROM subscribers b) AS Z`).Rows()
 
-	defer rows.Close()
+// 	if err != nil {
+// 		fmt.Errorf("%v", err)
+// 		return err, datas
+// 	}
 
-	for rows.Next() {
-		var (
-			user_id    sql.NullString
-			owner_name sql.NullString
-			email      sql.NullString
-			last_trx   sql.NullTime
-		)
+// 	defer rows.Close()
 
-		err = rows.Scan(&user_id, &owner_name, &email, &last_trx)
-		if err != nil {
-			// handle this error
-			fmt.Errorf("%v", err)
-			return err, datas
-		}
+// 	for rows.Next() {
+// 		var (
+// 			user_id    sql.NullString
+// 			owner_name sql.NullString
+// 			email      sql.NullString
+// 			last_trx   sql.NullTime
+// 		)
 
-		datas = append(datas, Data{
-			UserID:    user_id.String,
-			OwnerName: owner_name.String,
-			Email:     email.String,
-			LastTrx:   last_trx.Time,
-		})
-	}
+// 		err = rows.Scan(&user_id, &owner_name, &email, &last_trx)
+// 		if err != nil {
+// 			// handle this error
+// 			fmt.Errorf("%v", err)
+// 			return err, datas
+// 		}
 
-	return nil, datas
-}
+// 		datas = append(datas, Data{
+// 			UserID:    user_id.String,
+// 			OwnerName: owner_name.String,
+// 			Email:     email.String,
+// 			LastTrx:   last_trx.Time,
+// 		})
+// 	}
+
+// 	return nil, datas
+// }
