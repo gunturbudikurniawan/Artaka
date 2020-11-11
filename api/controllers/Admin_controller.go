@@ -53,7 +53,7 @@ func (server *Server) CreateAdmin(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{
-		"status":   http.StatusCreated,
+		"status":   "Success",
 		"response": adminCreated,
 		"error":    "null",
 	})
@@ -90,7 +90,7 @@ func (server *Server) LoginAdmin(c *gin.Context) {
 	errorMessages := admin.Validate("login")
 	if len(errorMessages) > 0 {
 		c.JSON(http.StatusOK, gin.H{
-			"status":   http.StatusInternalServerError,
+			"status":   "Failed",
 			"error":    errorMessages,
 			"response": "null",
 		})
@@ -101,14 +101,14 @@ func (server *Server) LoginAdmin(c *gin.Context) {
 		log.Println(err)
 		formattedError := formaterror.FormatError(err.Error())
 		c.JSON(http.StatusOK, gin.H{
-			"status":   http.StatusInternalServerError,
+			"status":   "Failed",
 			"error":    formattedError,
 			"response": "null",
 		})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"status":   http.StatusOK,
+		"status":   "Success",
 		"response": adminData,
 	})
 }
