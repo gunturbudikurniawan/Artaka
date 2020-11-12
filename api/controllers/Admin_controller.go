@@ -45,7 +45,7 @@ func (server *Server) CreateAdmin(c *gin.Context) {
 	adminCreated, err := admin.SaveAdmin(server.DB)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
-			"status":   http.StatusInternalServerError,
+			"status":   "Failed",
 			"error":    "Incorrect Details",
 			"response": "null",
 		})
