@@ -23,7 +23,7 @@ func (server *Server) CreateAdmin(c *gin.Context) {
 	if err != nil {
 		restErr := errors.RestErr{
 			Message: "Invalid Json Body",
-			Status:  http.StatusBadRequest,
+			Status:  "Failed",
 			Error:   "Bad_request",
 		}
 		c.JSON(restErr.Status, restErr)
@@ -35,7 +35,7 @@ func (server *Server) CreateAdmin(c *gin.Context) {
 	if err != nil {
 		restErr := errors.RestErr{
 			Message: "Cannot unmarshal body",
-			Status:  http.StatusBadRequest,
+			Status:  "Failed",
 			Error:   "Unmarshal_error",
 		}
 		c.JSON(restErr.Status, restErr)
@@ -66,7 +66,7 @@ func (server *Server) LoginAdmin(c *gin.Context) {
 
 		restErr := errors.RestErr{
 			Message: "Unable to get request",
-			Status:  http.StatusBadRequest,
+			Status:  "Failed",
 			Error:   "Unable to get request",
 		}
 		c.JSON(restErr.Status, restErr)
@@ -78,7 +78,7 @@ func (server *Server) LoginAdmin(c *gin.Context) {
 	if err != nil {
 		restErr := errors.RestErr{
 			Message: "Cannot unmarshal body",
-			Status:  http.StatusBadRequest,
+			Status:  "Failed",
 			Error:   "Unmarshal_error",
 		}
 		c.JSON(restErr.Status, restErr)
@@ -90,7 +90,7 @@ func (server *Server) LoginAdmin(c *gin.Context) {
 	if len(errorMessages) > 0 {
 		c.JSON(http.StatusOK, gin.H{
 			"status":   "Failed",
-			"error":    errorMessages,
+			"error":    "Incorrect Details",
 			"response": "null",
 		})
 		return
