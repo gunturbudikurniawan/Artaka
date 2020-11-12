@@ -4,6 +4,7 @@ import (
 	"strings"
 )
 
+// FormatError
 func FormatError(errString string) map[string]string {
 	var errorMessages = make(map[string]string)
 
@@ -17,8 +18,8 @@ func FormatError(errString string) map[string]string {
 		return errorMessages
 	}
 
-	if strings.Contains(errString, "title") {
-		errorMessages["Taken_title"] = "Title Already Taken"
+	if strings.Contains(errString, "phone") {
+		errorMessages["Taken_title"] = "Phone Already Taken"
 		return errorMessages
 	}
 

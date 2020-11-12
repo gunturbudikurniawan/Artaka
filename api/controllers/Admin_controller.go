@@ -44,10 +44,9 @@ func (server *Server) CreateAdmin(c *gin.Context) {
 	}
 	adminCreated, err := admin.SaveAdmin(server.DB)
 	if err != nil {
-		formattedError := formaterror.FormatError(err.Error())
 		c.JSON(http.StatusOK, gin.H{
 			"status":   http.StatusInternalServerError,
-			"error":    formattedError,
+			"error":    "Incorrect Details",
 			"response": "null",
 		})
 		return
@@ -99,10 +98,9 @@ func (server *Server) LoginAdmin(c *gin.Context) {
 	adminData, err := server.SignIn(admin.Email, admin.Secret_password)
 	if err != nil {
 		log.Println(err)
-		formattedError := formaterror.FormatError(err.Error())
 		c.JSON(http.StatusOK, gin.H{
 			"status":   "Failed",
-			"error":    formattedError,
+			"error":    "Email Or Password Incorrect",
 			"response": "null",
 		})
 		return
