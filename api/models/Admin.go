@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json"
 	"errors"
 	"html"
 	"log"
@@ -14,13 +13,12 @@ import (
 )
 
 type Admin struct {
-	ID              uint32          `gorm:"primary_key;auto_increment" json:"id"`
-	Phone           string          `gorm:"size:100;" json:"phone"`
-	Username        string          `gorm:"size:255;not null;unique" json:"username"`
-	Create_dtm      time.Time       `gorm:"default:CURRENT_TIMESTAMP" json:"create_dtm`
-	Email           string          `gorm:"size:100;not null;unique" json:"email"`
-	Secret_password string          `json:"secret_password"`
-	Idcard_image    json.RawMessage `json:"idcard_image"`
+	ID              uint32    `gorm:"primary_key;auto_increment" json:"id"`
+	Phone           string    `gorm:"size:100;" json:"phone"`
+	Username        string    `gorm:"size:255;not null;unique" json:"username"`
+	Create_dtm      time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"create_dtm`
+	Email           string    `gorm:"size:100;not null;unique" json:"email"`
+	Secret_password string    `json:"secret_password"`
 }
 
 func (a *Admin) BeforeSave() error {
