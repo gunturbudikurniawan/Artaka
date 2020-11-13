@@ -97,37 +97,11 @@ func Show(db *gorm.DB) (error, []Data) {
 		UNION SELECT user_id, owner_name, email, (SELECT create_dtm FROM onlinesales WHERE create_dtm > current_date-7 AND user_id = b.user_id ORDER BY id DESC LIMIT 1) FROM subscribers b
 		UNION SELECT user_id, owner_name, email, (SELECT create_dtm FROM saved_orders so WHERE create_dtm > current_date-7 AND user_id = b.user_id ORDER BY id DESC LIMIT 1) FROM subscribers b) AS Z`
 
-	/** saya lebih suka seperti ini */
 	err := db.Raw(query).Scan(&datas).Error
 	if err != nil {
 		fmt.Println(err)
 		return err, nil
 	}
-
-	// for rows.Next() {
-	/**
-	var (
-		user_id    sql.NullString
-		owner_name sql.NullString
-		email      sql.NullString
-		last_trx   sql.NullTime
-	)
-
-	err = rows.Scan(&user_id, &owner_name, &email, &last_trx)
-	if err != nil {
-		// handle this error
-		fmt.Errorf("%v", err)
-		return err, datas
-	}
-
-	datas = append(datas, Data{
-		UserID:    user_id.String,
-		OwnerName: owner_name.String,
-		Email:     email.String,
-		LastTrx:   last_trx.Time,
-	})
-	*/
-	// }
 
 	return nil, datas
 }

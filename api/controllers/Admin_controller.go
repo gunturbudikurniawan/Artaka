@@ -21,30 +21,33 @@ func (server *Server) CreateAdmin(c *gin.Context) {
 	errList = map[string]string{}
 	body, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"status":   "Failed",
-			"error":    "Failed",
-			"response": "null",
-		})
+		restErr := errors.RestErr{
+			Message: "Invalid Json Body",
+			Status:  http.StatusBadRequest,
+			Error:   "Bad_request",
+		}
+		c.JSON(restErr.Status, restErr)
 		return
 	}
 	admin := models.Admin{}
-	c.BindJSON(&admin)
+
 	err = json.Unmarshal(body, &admin)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"status":   "Failed",
-			"error":    "Failed",
-			"response": "null",
-		})
+		restErr := errors.RestErr{
+			Message: "Cannot unmarshal body",
+			Status:  http.StatusBadRequest,
+			Error:   "Unmarshal_error",
+		}
+		c.JSON(restErr.Status, restErr)
 		return
 
 	}
 	adminCreated, err := admin.SaveAdmin(server.DB)
 	if err != nil {
+		formattedError := formaterror.FormatError(err.Error())
 		c.JSON(http.StatusOK, gin.H{
-			"status":   "Failed",
-			"error":    "Incorrect Details",
+			"status":   http.StatusInternalServerError,
+			"error":    formattedError,
 			"response": "null",
 		})
 		return
@@ -62,22 +65,24 @@ func (server *Server) LoginAdmin(c *gin.Context) {
 	body, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
 
-		c.JSON(http.StatusOK, gin.H{
-			"status":   "Failed",
-			"error":    "Failed",
-			"response": "null",
-		})
+		restErr := errors.RestErr{
+			Message: "Unable to get request",
+			Status:  http.StatusBadRequest,
+			Error:   "Unable to get request",
+		}
+		c.JSON(restErr.Status, restErr)
 		return
 
 	}
 	admin := models.Admin{}
 	err = json.Unmarshal(body, &admin)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"status":   "Failed",
-			"error":    "Failed",
-			"response": "null",
-		})
+		restErr := errors.RestErr{
+			Message: "Cannot unmarshal body",
+			Status:  http.StatusBadRequest,
+			Error:   "Unmarshal_error",
+		}
+		c.JSON(restErr.Status, restErr)
 		return
 
 	}
@@ -86,7 +91,7 @@ func (server *Server) LoginAdmin(c *gin.Context) {
 	if len(errorMessages) > 0 {
 		c.JSON(http.StatusOK, gin.H{
 			"status":   "Failed",
-			"error":    "Failed",
+			"error":    errorMessages,
 			"response": "null",
 		})
 		return
@@ -94,9 +99,10 @@ func (server *Server) LoginAdmin(c *gin.Context) {
 	adminData, err := server.SignIn(admin.Email, admin.Secret_password)
 	if err != nil {
 		log.Println(err)
+		formattedError := formaterror.FormatError(err.Error())
 		c.JSON(http.StatusOK, gin.H{
 			"status":   "Failed",
-			"error":    "Email Or Password Incorrect",
+			"error":    formattedError,
 			"response": "null",
 		})
 		return

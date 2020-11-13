@@ -123,3 +123,14 @@ SELECT user_id, owner_name, email, Z.created_at as last_trx FROM (
 SELECT user_id,owner_name, email, (SELECT created_at FROM sales1 WHERE created_at > current_date-7 AND user_id = b.user_id ORDER BY id DESC LIMIT 1) FROM subscribers1 b
 UNION SELECT user_id, owner_name, email, (SELECT created_at FROM onlinesales1 WHERE created_at > current_date-7 AND user_id = b.user_id ORDER BY id DESC LIMIT 1) FROM subscribers1 b
 UNION SELECT user_id, owner_name, email, (SELECT created_at FROM saved_orders so WHERE created_at > current_date-7 AND user_id = b.user_id ORDER BY id DESC LIMIT 1) FROM subscribers1 b) AS Z
+
+# Postgres Live
+
+API_SECRET=secret
+DB_HOST=ec2-54-156-85-145.compute-1.amazonaws.com
+DB_DRIVER=postgres
+DB_USER=mwtewblqltwrap
+DB_PASSWORD=02d91570dc6bcbd2d8c46a6f594f378764b9b6008f06cbb82789b7df2bd94d02
+DB_NAME=d68g1373sedf8v
+DB_PORT=5432
+PORT1=8087
