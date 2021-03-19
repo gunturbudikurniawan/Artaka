@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"html"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/badoux/checkmail"
-	"github.com/gunturbudikurniawan/Artaka/api/security"
 	"github.com/jinzhu/gorm"
 )
+
+type FormUpdatePassword struct {
+	Secret_password string `json:"secret_password"`
+}
 
 type Subscribers struct {
 	ID               uint32          `gorm:"primary_key;auto_increment" json:"id"`
@@ -41,15 +43,82 @@ type MerchantsData struct {
 	Referral_code     string          `json:"referral_code"`
 	Business_category string          `json:"business_category"`
 }
-
-func (m *Subscribers) BeforeSave() error {
-	hashedPassword, err := security.Hash(m.Secret_password)
-	if err != nil {
-		return err
-	}
-	m.Secret_password = string(hashedPassword)
-	return nil
+type Event struct {
+	Type        string      `json:"type"`
+	Flag        string      `json:"flag"`
+	Marketplace Marketplace `json:"marketplace"`
+	Creator     Creator     `json:"creator"`
+	Payload     Payload     `json:"payload"`
 }
+type Marketplace struct {
+	BaseUrl string `json:"baseUrl"`
+	Partner string `json:"partner"`
+}
+type Creator struct {
+	Email     string  `json:"email" binding:"required,email"`
+	FirstName string  `json:"firstName"`
+	Language  string  `json:"language"`
+	LastName  string  `json:"lastName"`
+	Locale    string  `json:"locale"`
+	Uuid      string  `json:"uuid"`
+	Address   Address `json:"address"`
+}
+type Address struct {
+	City        string `json:"city"`
+	Country     string `json:"country"`
+	State       string `json:"state"`
+	Street1     string `json:"street1"`
+	Zip         string `json:"zip"`
+	CompanyName string `json:"companyName"`
+	FirstName   string `json:"firstName"`
+	LastName    string `json:"lastName"`
+	FullName    string `json:"fullName"`
+	Phone       string `json:"phone"`
+}
+type Payload struct {
+	Company       Company       `json:"company"`
+	Order         Order         `json:"order"`
+	Configuration Configuration `json:"configuration"`
+}
+type Company struct {
+	Uuid        string `json:"uuid"`
+	ExternalId  string `json:"externalId"`
+	Name        string `json:"name" binding:"required"`
+	Email       string `json:"email" binding:"required,email"`
+	PhoneNumber string `json:"phoneNumber"`
+	Website     string `json:"website"`
+	Country     string `json:"country"`
+}
+type Order struct {
+	EditionCode     string    `json:"editionCode"`
+	PricingDuration string    `json:"pricingDuration"`
+	Item            Item      `json:"item"`
+	Items           Items     `json:"items"`
+	FreeTrial       FreeTrial `json:"freeTrial"`
+}
+type Item struct {
+	Quantity string `json:"quantity"`
+	Unit     string `json:"unit"`
+}
+type Items struct {
+	Quantity string `json:"quantity"`
+	Unit     string `json:"unit"`
+}
+type FreeTrial struct {
+	Active bool `json:"active"`
+}
+type Configuration struct {
+	Domain string `json:"domain"`
+}
+
+// func (m *Subscribers) BeforeSave() error {
+// 	hashedPassword, err := security.Hash(m.Secret_password)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	m.Secret_password = string(hashedPassword)
+// 	return nil
+// }
 
 func (m *Subscribers) Prepare() {
 
@@ -66,21 +135,6 @@ func (m *Subscribers) Validate(action string) map[string]string {
 	var err error
 
 	switch strings.ToLower(action) {
-	case "update":
-		if m.Email == "" {
-			err = errors.New("Required Email")
-			errorMessages["Required_email"] = err.Error()
-			return errorMessages
-		}
-		if m.Email != "" {
-			if err = checkmail.ValidateFormat(m.Email); err != nil {
-				err = errors.New("Invalid Email")
-				errorMessages["Invalid_email"] = err.Error()
-				return errorMessages
-
-			}
-		}
-
 	case "login":
 		if m.Secret_password == "" {
 			err = errors.New("Required Password")
@@ -165,19 +219,19 @@ func (m *Subscribers) SaveUser(db *gorm.DB) (*Subscribers, error) {
 
 func (m *Subscribers) UpdateMerchant(db *gorm.DB, uid uint32) (*Subscribers, error) {
 
-	if m.Secret_password != "" {
-		err := m.BeforeSave()
-		if err != nil {
-			log.Fatal(err)
-		}
+	// if m.Secret_password != "" {
+	// 	err := m.BeforeSave()
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
 
-		db = db.Debug().Model(&Subscribers{}).Where("id = ?", uid).Take(&Subscribers{}).UpdateColumns(
-			map[string]interface{}{
-				"password": m.Secret_password,
-				"email":    m.Email,
-			},
-		)
-	}
+	// 	db = db.Debug().Model(&Subscribers{}).Where("id = ?", uid).Take(&Subscribers{}).UpdateColumns(
+	// 		map[string]interface{}{
+	// 			"password": m.Secret_password,
+	// 			"email":    m.Email,
+	// 		},
+	// 	)
+	// }
 	db = db.Debug().Model(&Subscribers{}).Where("id = ?", uid).Take(&Subscribers{}).UpdateColumns(
 		map[string]interface{}{
 			"email": m.Email,

@@ -6,9 +6,15 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/smtp"
+	"os"
 	"strconv"
+	"strings"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v7"
 	"github.com/gunturbudikurniawan/Artaka/api/auth"
 	"github.com/gunturbudikurniawan/Artaka/api/models"
 	"github.com/gunturbudikurniawan/Artaka/api/security"
@@ -17,9 +23,219 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var jwtKey = []byte("my_secret_key")
+
+var client *redis.Client
+
+func init() {
+	//Initializing redis
+	dsn := os.Getenv("REDIS_DSN")
+	if len(dsn) == 0 {
+		dsn = "localhost:6379"
+	}
+	client = redis.NewClient(&redis.Options{
+		Addr: dsn, //redis port
+	})
+	_, err := client.Ping().Result()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (server *Server) UpdatePassword(c *gin.Context) {
+	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
+	tokenString := strings.Split(tokenBearer, " ")[1]
+
+	token, err := jwt.Parse(tokenString, nil)
+	if err == nil {
+		c.JSON(http.StatusOK, "Token")
+
+	}
+	claims, _ := token.Claims.(jwt.MapClaims)
+
+	formerSubscribers := models.Subscribers{}
+	err = server.DB.Debug().Model(models.Subscribers{}).Where("id = ?", claims["id"]).Take(&formerSubscribers).Error
+	if err != nil {
+		errList["User_invalid"] = "The user is does not exist"
+		c.JSON(http.StatusOK, gin.H{
+			"status": http.StatusOK,
+			"error":  errList,
+		})
+		return
+	}
+	var input models.FormUpdatePassword
+	if err := c.ShouldBindJSON(&input); err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Could not decode input"})
+		return
+	}
+	pass, err := bcrypt.GenerateFromPassword([]byte(input.Secret_password), bcrypt.DefaultCost)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password Encryption  failed"})
+		return
+	}
+	input.Secret_password = string(pass)
+	server.DB.Debug().Model(&models.Subscribers{}).Where("id = ?", claims["id"]).Take(&models.Subscribers{}).UpdateColumns(
+		map[string]interface{}{
+			"secret_password": input.Secret_password,
+		},
+	)
+	c.JSON(http.StatusOK, gin.H{"data": "Update successful"})
+
+}
+
+func (server *Server) CreateUsahaku(c *gin.Context) {
+	// tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
+	// tokenString := strings.Split(tokenBearer, " ")[1]
+	// response, err := http.Get("https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/events/" + tokenString)
+	// if err != nil {
+	// 	fmt.Printf("The HTTP request failed with error %s\n", err)
+	// } else {
+	// 	event := models.Event{}
+	// 	data, _ := ioutil.ReadAll(response.Body)
+	// 	_ = json.Unmarshal(data, &event)
+	// 	if event.Payload.Company.Name == "" || event.Payload.Company.Email == "" || event.Payload.Company.PhoneNumber == "" || event.Payload.Company.Website == "" {
+	// 		c.JSON(http.StatusOK, gin.H{
+	// 			"Success":   "False",
+	// 			"errorCode": "INVALID_RESPONSE",
+	// 		})
+	// 	} else {
+	// 		// merchant := models.Subscribers{}
+	// 	}
+
+	// }
+	db := server.DB
+	keys := c.Request.URL.Query()
+	token := keys.Get("token")
+	resp, _ := http.Get("https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/events/" + token)
+	if resp.StatusCode != 200 {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	event := models.Event{}
+	data, _ := ioutil.ReadAll(resp.Body)
+	_ = json.Unmarshal(data, &event)
+	// if err != nil {
+	x := event.Payload.Company.PhoneNumber
+	i := strings.Index(x, "+")
+	var phone string
+	if i > -1 {
+		phone = event.Payload.Company.PhoneNumber
+	} else {
+		phone = "+" + event.Payload.Company.PhoneNumber
+	}
+	hasil := db.Create(&models.Subscribers{Create_dtm: time.Now(),
+		User_id:          phone,
+		Email:            event.Payload.Company.Email,
+		Owner_name:       event.Payload.Company.Name,
+		Secret_password:  "",
+		Fcm_token:        "",
+		Idcard_name:      "",
+		Idcard_number:    "",
+		Bank_holder_name: "",
+		Bank_name:        "",
+		Bank_account:     "",
+		Idcard_image:     json.RawMessage(`["https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"]`),
+		Referral_code:    ""})
+
+	tokenInfo, err := CreateToken(hasil.Value.(*models.Subscribers).ID)
+	if err != nil {
+		// If there is an error in creating the JWT return an internal server error
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	err = CreateAuth(hasil.Value.(*models.Subscribers).Owner_name, tokenInfo)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	result := make(map[string]interface{})
+	result["id"] = hasil.Value.(*models.Subscribers).ID
+	result["token"] = tokenInfo.AccessToken
+	c.JSON(http.StatusOK, result)
+	if result["token"] != "" {
+		from := "gunturkurniawan238@gmail.com"
+		password := "p!Nu$16051995"
+		to := []string{
+			"gunturbudikurniawan16@gmail.com",
+			"gunturkurniawan239@gmail.com",
+		}
+		smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
+		message := []byte("To: Merchant Artaka \r\n" +
+			"Subject: Hallo Artaka!\r\n" +
+			"\r\n" +
+			"This is the email body.\r\n" + "https://master.d3mr68pgup3qa4.amplifyapp.com/reset/" + tokenInfo.AccessToken)
+		auth := smtp.PlainAuth("", from, password, smtpServer.host)
+		err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println("Email Sent!")
+	}
+
+}
+
+type smtpServer struct {
+	host string
+	port string
+} // Address URI to smtp server
+func (s *smtpServer) Address() string {
+	return s.host + ":" + s.port
+}
+
+func CreateToken(id uint32) (*models.TokenDetails, error) {
+	tokenInfo := &models.TokenDetails{}
+	tokenInfo.AccessTokenExpires = time.Now().AddDate(0, 1, 0).Unix()
+
+	tokenInfo.RefreshTokenExpires = time.Now().Add(time.Hour * 24 * 7).Unix()
+
+	var err error
+	//Creating Access Token
+	os.Setenv("ACCESS_SECRET", "artaka") //this should be in an env file
+	atClaims := jwt.MapClaims{}
+	atClaims["authorized"] = true
+
+	atClaims["id"] = id
+	atClaims["exp"] = tokenInfo.AccessTokenExpires
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	tokenInfo.AccessToken, err = at.SignedString([]byte("ACCESS_SECRET"))
+	if err != nil {
+		return nil, err
+	}
+	//Creating Refresh Token
+	os.Setenv("REFRESH_SECRET", "artaka") //this should be in an env file
+	rtClaims := jwt.MapClaims{}
+	rtClaims["username"] = id
+	rtClaims["exp"] = tokenInfo.RefreshTokenExpires
+	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
+	tokenInfo.RefreshToken, err = rt.SignedString([]byte("REFRESH_SECRET"))
+	if err != nil {
+		return nil, err
+	}
+
+	return tokenInfo, nil
+}
+
+func CreateAuth(id string, td *models.TokenDetails) error {
+	at := time.Unix(td.AccessTokenExpires, 0) //converting Unix to UTC(to Time object)
+	rt := time.Unix(td.RefreshTokenExpires, 0)
+	now := time.Now()
+
+	errAccess := client.Set(id, td.AccessToken, at.Sub(now)).Err()
+	if errAccess != nil {
+		return errAccess
+	}
+	key := "username" + "_refreshtoken"
+	errRefresh := client.Set(key, td.RefreshToken, rt.Sub(now)).Err()
+	if errRefresh != nil {
+		return errRefresh
+	}
+	return nil
+}
 func (server *Server) CreateMerchants(c *gin.Context) {
 
-	//clear previous error if any
 	errList = map[string]string{}
 
 	body, err := ioutil.ReadAll(c.Request.Body)
@@ -55,7 +271,6 @@ func (server *Server) CreateMerchants(c *gin.Context) {
 		})
 		return
 	}
-	log.Println(err)
 	userCreated, err := merchant.SaveUser(server.DB)
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
