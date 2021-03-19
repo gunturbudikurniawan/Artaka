@@ -86,25 +86,7 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 }
 
 func (server *Server) CreateUsahaku(c *gin.Context) {
-	// tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
-	// tokenString := strings.Split(tokenBearer, " ")[1]
-	// response, err := http.Get("https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/events/" + tokenString)
-	// if err != nil {
-	// 	fmt.Printf("The HTTP request failed with error %s\n", err)
-	// } else {
-	// 	event := models.Event{}
-	// 	data, _ := ioutil.ReadAll(response.Body)
-	// 	_ = json.Unmarshal(data, &event)
-	// 	if event.Payload.Company.Name == "" || event.Payload.Company.Email == "" || event.Payload.Company.PhoneNumber == "" || event.Payload.Company.Website == "" {
-	// 		c.JSON(http.StatusOK, gin.H{
-	// 			"Success":   "False",
-	// 			"errorCode": "INVALID_RESPONSE",
-	// 		})
-	// 	} else {
-	// 		// merchant := models.Subscribers{}
-	// 	}
 
-	// }
 	db := server.DB
 	keys := c.Request.URL.Query()
 	token := keys.Get("token")
@@ -116,7 +98,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	event := models.Event{}
 	data, _ := ioutil.ReadAll(resp.Body)
 	_ = json.Unmarshal(data, &event)
-	// if err != nil {
 	x := event.Payload.Company.PhoneNumber
 	i := strings.Index(x, "+")
 	var phone string
@@ -141,7 +122,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 
 	tokenInfo, err := CreateToken(hasil.Value.(*models.Subscribers).ID)
 	if err != nil {
-		// If there is an error in creating the JWT return an internal server error
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
