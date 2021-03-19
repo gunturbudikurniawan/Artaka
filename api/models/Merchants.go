@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"html"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/badoux/checkmail"
-	"github.com/gunturbudikurniawan/Artaka/api/security"
 	"github.com/jinzhu/gorm"
 )
+
+type FormUpdatePassword struct {
+	Secret_password string `json:"secret_password"`
+}
 
 type Subscribers struct {
 	ID               uint32          `gorm:"primary_key;auto_increment" json:"id"`
@@ -30,22 +32,93 @@ type Subscribers struct {
 	Referral_code    string          `json:"referral_code"`
 }
 type MerchantsData struct {
-	ID            uint32    `gorm:"primary_key;auto_increment" json:"id"`
-	Create_dtm    time.Time `json:"create_dtm"`
-	User_id       string    `json:"user_id"`
-	Email         string    `json:"email"`
-	Owner_name    string    `json:"owner_name"`
-	Referral_code string    `json:"referral_code"`
+	UserID            string          `json:"user_id"`
+	OwnerName         string          `json:"owner_name"`
+	Email             string          `json:"email"`
+	Register          string          `json:"register"`
+	Create_dtm        string          `json:"create_dtm"`
+	Toko_name_address string          `json:"toko_name_address"`
+	Tanggal           string          `json:"tanggal"`
+	Images            json.RawMessage `json:"images"`
+	Referral_code     string          `json:"referral_code"`
+	Business_category string          `json:"business_category"`
+}
+type Event struct {
+	Type        string      `json:"type"`
+	Flag        string      `json:"flag"`
+	Marketplace Marketplace `json:"marketplace"`
+	Creator     Creator     `json:"creator"`
+	Payload     Payload     `json:"payload"`
+}
+type Marketplace struct {
+	BaseUrl string `json:"baseUrl"`
+	Partner string `json:"partner"`
+}
+type Creator struct {
+	Email     string  `json:"email" binding:"required,email"`
+	FirstName string  `json:"firstName"`
+	Language  string  `json:"language"`
+	LastName  string  `json:"lastName"`
+	Locale    string  `json:"locale"`
+	Uuid      string  `json:"uuid"`
+	Address   Address `json:"address"`
+}
+type Address struct {
+	City        string `json:"city"`
+	Country     string `json:"country"`
+	State       string `json:"state"`
+	Street1     string `json:"street1"`
+	Zip         string `json:"zip"`
+	CompanyName string `json:"companyName"`
+	FirstName   string `json:"firstName"`
+	LastName    string `json:"lastName"`
+	FullName    string `json:"fullName"`
+	Phone       string `json:"phone"`
+}
+type Payload struct {
+	Company       Company       `json:"company"`
+	Order         Order         `json:"order"`
+	Configuration Configuration `json:"configuration"`
+}
+type Company struct {
+	Uuid        string `json:"uuid"`
+	ExternalId  string `json:"externalId"`
+	Name        string `json:"name" binding:"required"`
+	Email       string `json:"email" binding:"required,email"`
+	PhoneNumber string `json:"phoneNumber"`
+	Website     string `json:"website"`
+	Country     string `json:"country"`
+}
+type Order struct {
+	EditionCode     string    `json:"editionCode"`
+	PricingDuration string    `json:"pricingDuration"`
+	Item            Item      `json:"item"`
+	Items           Items     `json:"items"`
+	FreeTrial       FreeTrial `json:"freeTrial"`
+}
+type Item struct {
+	Quantity string `json:"quantity"`
+	Unit     string `json:"unit"`
+}
+type Items struct {
+	Quantity string `json:"quantity"`
+	Unit     string `json:"unit"`
+}
+type FreeTrial struct {
+	Active bool `json:"active"`
+}
+type Configuration struct {
+	Domain string `json:"domain"`
 }
 
-func (m *Subscribers) BeforeSave() error {
-	hashedPassword, err := security.Hash(m.Secret_password)
-	if err != nil {
-		return err
-	}
-	m.Secret_password = string(hashedPassword)
-	return nil
-}
+// func (m *Subscribers) BeforeSave() error {
+// 	hashedPassword, err := security.Hash(m.Secret_password)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	m.Secret_password = string(hashedPassword)
+// 	return nil
+// }
 
 func (m *Subscribers) Prepare() {
 
@@ -62,21 +135,6 @@ func (m *Subscribers) Validate(action string) map[string]string {
 	var err error
 
 	switch strings.ToLower(action) {
-	case "update":
-		if m.Email == "" {
-			err = errors.New("Required Email")
-			errorMessages["Required_email"] = err.Error()
-			return errorMessages
-		}
-		if m.Email != "" {
-			if err = checkmail.ValidateFormat(m.Email); err != nil {
-				err = errors.New("Invalid Email")
-				errorMessages["Invalid_email"] = err.Error()
-				return errorMessages
-
-			}
-		}
-
 	case "login":
 		if m.Secret_password == "" {
 			err = errors.New("Required Password")
@@ -161,19 +219,19 @@ func (m *Subscribers) SaveUser(db *gorm.DB) (*Subscribers, error) {
 
 func (m *Subscribers) UpdateMerchant(db *gorm.DB, uid uint32) (*Subscribers, error) {
 
-	if m.Secret_password != "" {
-		err := m.BeforeSave()
-		if err != nil {
-			log.Fatal(err)
-		}
+	// if m.Secret_password != "" {
+	// 	err := m.BeforeSave()
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
 
-		db = db.Debug().Model(&Subscribers{}).Where("id = ?", uid).Take(&Subscribers{}).UpdateColumns(
-			map[string]interface{}{
-				"password": m.Secret_password,
-				"email":    m.Email,
-			},
-		)
-	}
+	// 	db = db.Debug().Model(&Subscribers{}).Where("id = ?", uid).Take(&Subscribers{}).UpdateColumns(
+	// 		map[string]interface{}{
+	// 			"password": m.Secret_password,
+	// 			"email":    m.Email,
+	// 		},
+	// 	)
+	// }
 	db = db.Debug().Model(&Subscribers{}).Where("id = ?", uid).Take(&Subscribers{}).UpdateColumns(
 		map[string]interface{}{
 			"email": m.Email,
@@ -199,14 +257,53 @@ func (m *Subscribers) FindAllMerchants(db *gorm.DB) (*[]Subscribers, error) {
 	}
 	return &merchants, err
 }
-func ShowSubscribers(db *gorm.DB) (error, []*MerchantsData) {
-	query := `select id, create_dtm, user_id, email, owner_name, referral_code from subscribers`
-	var merchant []*MerchantsData
-	err := db.Raw(query).Scan(&merchant).Error
+func ShowSubscribers(db *gorm.DB, referral_code string, role string) (error, []MerchantsData) {
+	var datas []MerchantsData
+	query := `select xx.user_id,(select owner_name from subscribers where user_id = xx.user_id limit 1) owner_name, 
+	(select email from subscribers where user_id = xx.user_id limit 1) email, 
+	(select create_dtm from subscribers where user_id = xx.user_id limit 1) register, max(xx.create_dtm) as create_dtm,
+	(select concat(nama,'|', address) as Toko_name_address from outlets where user_id = xx.user_id limit 1) as Toko_name_address, 
+	(select updated_at from posts where content IS NOT NULL AND phone = xx.user_id limit 1) as tanggal,
+	(select to_jsonb(images) from outlets where user_id = xx.user_id limit 1) as images, 
+	(select referral_code from subscribers where user_id = xx.user_id limit 1) as referral_code,
+	(select business_category from outlets where user_id = xx.user_id limit 1) as business_category
+	from(select y.user_id, max(y.create_dtm) as create_dtm from(select a.user_id, 
+	(select s.create_dtm from sales s where user_id = a.user_id order by create_dtm desc limit 1)
+	from subscribers a UNION select b.user_id, 
+	(select create_dtm from onlinesales where user_id = b.user_id order by create_dtm desc limit 1)
+	from subscribers b UNION select c.user_id, 
+	(select create_dtm from saved_orders where user_id = c.user_id order by create_dtm desc limit 1) 
+	from subscribers c) y group by y.user_id) xx where xx.user_id not in
+	(select yy.user_id from
+	(select y.user_id, max(y.create_dtm)from(select a.user_id, 
+	(select s.create_dtm from sales s where user_id = a.user_id and create_dtm > (current_date -1) order by create_dtm desc limit 1)
+	from subscribers a UNION select b.user_id, 
+	(select create_dtm from onlinesales where user_id = b.user_id and create_dtm > (current_date -1) order by create_dtm desc limit 1)
+	from subscribers b
+	UNION
+	select c.user_id, 
+	(select create_dtm from saved_orders where user_id = c.user_id and create_dtm > (current_date -1) order by create_dtm desc limit 1) 
+	from subscribers c) y where y.create_dtm is not null group by y.user_id) yy)  
+	GROUP BY xx.user_id, (select owner_name from subscribers where user_id = xx.user_id limit 1), (select email from subscribers where user_id = xx.user_id limit 1), (select create_dtm from subscribers where user_id = xx.user_id limit 1), 
+	(select concat(nama,'|', address) as nama from outlets where user_id = xx.user_id limit 1),(select to_jsonb(images) from outlets where user_id = xx.user_id limit 1)
+	ORDER BY xx.user_id, (select owner_name from subscribers where user_id = xx.user_id limit 1), (select email from subscribers where user_id = xx.user_id limit 1),  (select create_dtm from subscribers where user_id = xx.user_id limit 1),
+	(select concat(nama,'|', address) as nama from outlets where user_id = xx.user_id limit 1),
+	(select to_jsonb(images) from outlets where user_id = xx.user_id limit 1)`
+	err := db.Raw(query).Scan(&datas).Error
 	if err != nil {
 		return err, nil
 	}
-	return nil, merchant
+	var res []MerchantsData
+	for i := 0; i < len(datas); i++ {
+		if role == "ADMIN" {
+			if datas[i].Referral_code != "" || datas[i].Referral_code == "" {
+				res = append(res, datas[i])
+			}
+		} else if strings.Contains(strings.ToUpper(datas[i].Referral_code), strings.ToUpper(referral_code)) {
+			res = append(res, datas[i])
+		}
+	}
+	return nil, res
 }
 
 func (m *Subscribers) FindMerchantByID(db *gorm.DB, uid uint32) (*Subscribers, error) {

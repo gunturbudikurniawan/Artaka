@@ -8,7 +8,7 @@ import (
 )
 
 type Sales1 struct {
-	ID               uint32          `gorm:"primary_key;auto_increment" json:"id"`
+	ID               uint            `gorm:"primary_key;auto_increment" json:"id"`
 	Create_dtm       time.Time       `json:"create_dtm"`
 	Sales_id         string          `json:"sales_id"`
 	User_id          string          `json:"user_id"`
@@ -30,14 +30,23 @@ type Sales1 struct {
 	Reward_id        string          `json:"Reward_id"`
 	Points_redeem    int             `json:"points_redeem"`
 }
+type Referral struct {
+	Referral_code string `gorm: json:"referral_code"`
+}
 
-func ShowPaymentMethodSales(db *gorm.DB) (error, []Sales1) {
-	var datas []Sales1
-	query := `SELECT * FROM sales WHERE payment_method='Tunai' OR payment_method='Uang Pas'`
+func ShowReferralCode(db *gorm.DB) (error, []Referral) {
+	var datas []Referral
+	query := `SELECT DISTINCT LOWER(trim(referral_code)) as referral_code from subscribers order by LOWER(trim(referral_code))`
 	err := db.Raw(query).Scan(&datas).Error
 	if err != nil {
 		return err, nil
 	}
-
-	return nil, datas
+	// tambahin condition
+	var res []Referral
+	for i := 0; i < len(datas); i++ {
+		if datas[i].Referral_code != "" {
+			res = append(res, datas[i])
+		}
+	}
+	return nil, res
 }

@@ -8,7 +8,7 @@ import (
 )
 
 type Onlinesales1 struct {
-	ID               uint32          `gorm:"primary_key;auto_increment" json:"id"`
+	ID               uint            `gorm:"primary_key;auto_increment" json:"id"`
 	Create_dtm       time.Time       `json:"create_dtm"`
 	Sales_id         string          `json:"sales_id"`
 	User_id          string          `json:"user_id"`
@@ -35,15 +35,26 @@ type Onlinesales1 struct {
 	Points_redeem    int             `json:"points_redeem"`
 	Order_status     string          `json:"order_status"`
 	Shipment_number  string          `json:"shipment_number"`
+	Referral_code    string          `json:"referral_code"`
 }
 
-func ShowPaymentMethodVAOnlineSales(db *gorm.DB) (error, []Onlinesales1) {
+func ShowPaymentMethodVAOnlineSales(db *gorm.DB, referral_code string, role string) (error, []Onlinesales1) {
 	var datas []Onlinesales1
-	query := `SELECT * FROM onlinesales WHERE payment_method LIKE '%Virtual Account%'`
+	query := `select o.*,s.referral_code 
+	from onlinesales o join subscribers s on o.user_id = s.user_id
+	where o.payment_method like '%Virtual Account%'`
 	err := db.Raw(query).Scan(&datas).Error
 	if err != nil {
 		return err, nil
 	}
+	var res []Onlinesales1
+	for i := 0; i < len(datas); i++ {
+		if role == "ADMIN" {
+			res = append(res, datas[i])
+		} else if datas[i].Referral_code == referral_code {
+			res = append(res, datas[i])
+		}
 
-	return nil, datas
+	}
+	return nil, res
 }

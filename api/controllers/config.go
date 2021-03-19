@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/go-redis/redis/v7"
 	"github.com/gunturbudikurniawan/Artaka/api/models"
 
 	"github.com/gunturbudikurniawan/Artaka/api/middlewares"
@@ -15,8 +17,9 @@ import (
 )
 
 type Server struct {
-	DB     *gorm.DB
-	Router *gin.Engine
+	DB          *gorm.DB
+	Router      *gin.Engine
+	RedisClient *redis.Client
 }
 
 var errList = make(map[string]string)
@@ -35,6 +38,7 @@ func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, D
 	} else {
 		fmt.Println("Unknown Driver")
 	}
+	//database migration
 	server.DB.Debug().AutoMigrate(
 		&models.Admin{},
 		&models.Subscribers{},
@@ -44,6 +48,17 @@ func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, D
 		&models.Onlinesales{},
 		&models.Outlets{},
 	)
+	dsn := os.Getenv("REDIS_DSN")
+
+	server.RedisClient = redis.NewClient(&redis.Options{
+		Addr:     dsn,
+		Password: "",
+		DB:       0,
+	})
+	_, err = server.RedisClient.Ping().Result()
+	if err != nil {
+		fmt.Println(err)
+	}
 	server.Router = gin.Default()
 	server.Router.Use(middlewares.CORSMiddleware())
 	server.initialRoutes()

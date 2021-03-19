@@ -133,7 +133,7 @@ func (server *Server) SignInByEmail(email, password string) (map[string]interfac
 		fmt.Println("this is the error hashing the password: ", err)
 		return nil, err
 	}
-	token, err := auth.CreateToken(admin.ID)
+	token, err := auth.CreateToken(admin.ID, admin.Referral_code, admin.Role)
 	if err != nil {
 		fmt.Println("this is the error creating the token: ", err)
 		return nil, err
@@ -163,7 +163,7 @@ func (server *Server) SignInByPhone(phone, password string) (map[string]interfac
 		fmt.Println("this is the error hashing the password: ", err)
 		return nil, err
 	}
-	token, err := auth.CreateToken(admin.ID)
+	token, err := auth.CreateToken(admin.ID, admin.Referral_code, admin.Role)
 	if err != nil {
 		fmt.Println("this is the error creating the token: ", err)
 		return nil, err
@@ -195,7 +195,7 @@ func (server *Server) UpdateAdmin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, restErr)
 		return
 	}
-	tokenID, err := auth.ExtractTokenID(c.Request)
+	tokenID, _, _, err := auth.ExtractTokenID(c.Request)
 	if err != nil {
 		errList["Unauthorized"] = "Unauthorized"
 		c.JSON(http.StatusOK, gin.H{
