@@ -1,4 +1,3 @@
-branch-defaults:
   master:
     environment: monitoring-artaka
     group _suffix: null
