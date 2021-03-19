@@ -63,7 +63,7 @@ DB_USER=postgres
 DB_PASSWORD=root
 DB_NAME=Artaka
 DB_PORT=5432
-PORT1=5000
+PORT1=5001
 
 # Postgres Live
 
@@ -74,4 +74,4 @@ DB_USER=bambang_susilo
 DB_PASSWORD=Artaka16!
 DB_NAME=mpos1
 DB_PORT=5432
-PORT1=5000
+PORT1=5001
