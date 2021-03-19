@@ -5,16 +5,30 @@ import (
 	"log"
 	"os"
 
+	"github.com/go-redis/redis/v7"
 	"github.com/gunturbudikurniawan/Artaka/api/controllers"
 	"github.com/joho/godotenv"
 )
 
 var server = controllers.Server{}
+var client *redis.Client
 
 func init() {
 	// loads values from .env into the system
 	if err := godotenv.Load(); err != nil {
 		log.Print("sad .env file found")
+	}
+	//Initializing redis
+	dsn := os.Getenv("REDIS_DSN")
+	if len(dsn) == 0 {
+		dsn = "localhost:6379"
+	}
+	client = redis.NewClient(&redis.Options{
+		Addr: dsn, //redis port
+	})
+	_, err := client.Ping().Result()
+	if err != nil {
+		fmt.Print(err)
 	}
 }
 

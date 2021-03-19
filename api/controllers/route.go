@@ -22,6 +22,9 @@ func (s *Server) initialRoutes() {
 
 	v2 := s.Router.Group("/api/merchant")
 	{
+		v2.POST("/regis", s.CreateUsahaku)
+		v2.POST("/update", s.UpdatePassword)
+
 		v2.POST("/register", s.CreateMerchants)
 		v2.POST("/login", s.LoginMerchant)
 		v2.PUT("/update/:id", s.UpdateMerchant)
