@@ -57,17 +57,6 @@ curl -i -X GET -H "Content-Type: application/json" https://artaka.herokuapp.com/
 # Postgres Live
 
 API_SECRET=secret
-DB_HOST=localhost
-DB_DRIVER=postgres
-DB_USER=postgres
-DB_PASSWORD=root
-DB_NAME=Artaka
-DB_PORT=5432
-PORT1=5000
-
-# Postgres Live
-
-API_SECRET=secret
 DB_HOST=mpos.cvhuy9njnz7l.ap-southeast-1.rds.amazonaws.com
 DB_DRIVER=postgres
 DB_USER=bambang_susilo
