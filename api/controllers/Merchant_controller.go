@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/smtp"
 	"os"
 	"strconv"
 	"strings"
@@ -21,6 +20,7 @@ import (
 	"github.com/gunturbudikurniawan/Artaka/api/utils/errors"
 	"github.com/gunturbudikurniawan/Artaka/api/utils/formaterror"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/gomail.v2"
 )
 
 var jwtKey = []byte("my_secret_key")
@@ -138,25 +138,43 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	result["success"] = "True"
 	c.JSON(http.StatusOK, result)
 	fmt.Println(tokenInfo.AccessToken + "================")
-	if result["success"] == "True" {
-		from := "info@artaka.id"
-		password := "ArtakA0819!"
-		to := []string{
-			event.Payload.Company.Email,
-			"gunturkurniawan238@gmail.com",
-		}
-		smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
-		message := []byte("To: Merchant Artaka \r\n" +
-			"Subject: Hallo Artaka!\r\n" +
-			"\r\n" +
-			"This is the email body.\r\n" + "https://master.d3mr68pgup3qa4.amplifyapp.com/reset/" + tokenInfo.AccessToken)
-		auth := smtp.PlainAuth("", from, password, smtpServer.host)
-		err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
-		if err != nil {
-			return
-		}
-		fmt.Println("Email Sent!")
+	m := gomail.NewMessage()
+	m.SetHeader("From", "alex@example.com")
+	m.SetHeader("To", "gunturkurniawan238@gmail.com", "cora@example.com")
+	m.SetAddressHeader("Cc", "dan@example.com", "Dan")
+	m.SetHeader("Subject", "Hello Artaka!")
+	m.SetBody("text/html", ("To: Merchant Artaka \r\n" +
+		"Subject: Hallo Artaka!\r\n" +
+		"\r\n" +
+		"This is the email body.\r\n" + "https://master.d3mr68pgup3qa4.amplifyapp.com/reset/" + tokenInfo.AccessToken))
+	m.Attach("/home/Alex/lolcat.jpg")
+
+	d := gomail.NewDialer("smtp.example.com", 587, "user", "123456")
+
+	// Send the email to Bob, Cora and Dan.
+	if err := d.DialAndSend(m); err != nil {
+		panic(err)
 	}
+
+	// if result["success"] == "True" {
+	// 	from := "info@artaka.id"
+	// 	password := "ArtakA0819!"
+	// 	to := []string{
+	// 		event.Payload.Company.Email,
+	// 		"gunturkurniawan238@gmail.com",
+	// 	}
+	// 	smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
+	// message := []byte("To: Merchant Artaka \r\n" +
+	// 	"Subject: Hallo Artaka!\r\n" +
+	// 	"\r\n" +
+	// 	"This is the email body.\r\n" + "https://master.d3mr68pgup3qa4.amplifyapp.com/reset/" + tokenInfo.AccessToken)
+	// 	auth := smtp.PlainAuth("", from, password, smtpServer.host)
+	// 	err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// 	fmt.Println("Email Sent!")
+	// }
 
 }
 
