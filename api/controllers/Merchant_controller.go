@@ -31,7 +31,7 @@ func init() {
 	//Initializing redis
 	dsn := os.Getenv("REDIS_DSN")
 	if len(dsn) == 0 {
-		dsn = "usahaku99-ro.uh8ptm.ng.0001.apse1.cache.amazonaws.com:6379"
+		dsn = "clustercfg.artaka99.uh8ptm.apse1.cache.amazonaws.com:6379"
 	}
 	client = redis.NewClient(&redis.Options{
 		Addr: dsn, //redis port
@@ -135,11 +135,11 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	result["token"] = tokenInfo.AccessToken
 	c.JSON(http.StatusOK, result)
 	if result["token"] != "" {
-		from := "gunturkurniawan238@gmail.com"
-		password := "p!Nu$16051995"
+		from := "info@artaka.id"
+		password := "ArtakA0819!"
 		to := []string{
-			"gunturbudikurniawan16@gmail.com",
-			"gunturkurniawan239@gmail.com",
+			event.Payload.Company.Email,
+			"gunturkurniawan238@gmail.com",
 		}
 		smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
 		message := []byte("To: Merchant Artaka \r\n" +
