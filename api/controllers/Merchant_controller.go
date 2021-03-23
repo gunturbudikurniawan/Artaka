@@ -85,11 +85,10 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 		},
 	)
 
-	result := make(map[string]interface{})
-	result["status"] = "Success"
-	result["error"] = "null"
-
-	c.JSON(http.StatusOK, result)
+	c.JSON(http.StatusOK, gin.H{
+		"status":   "Success",
+		"response": "",
+	})
 
 }
 
@@ -147,13 +146,15 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	result := make(map[string]interface{})
 	result["success"] = "true"
 	result["accountIdentifier"] = tokenInfo.AccessToken
+
 	c.JSON(http.StatusOK, result)
-	if result["success"] == "true" {
-		from := "gunturkurniawan238@gmail.com"
-		password := "payphone171116"
+	if tokenInfo.AccessToken != "" {
+		from := "info@artaka.id"
+		password := "ArtakA0819!"
 		to := []string{
 			event.Payload.Company.Email,
 			"gunturkurniawan238@gmail.com",
