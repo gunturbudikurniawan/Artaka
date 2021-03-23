@@ -136,7 +136,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	result["success"] = "True"
 	c.JSON(http.StatusOK, result)
 	fmt.Println(tokenInfo.AccessToken + "================")
-	if tokenInfo.AccessToken != "" {
+	if result["success"] == "True" {
 		from := "info@artaka.id"
 		password := "ArtakA0819!"
 		to := []string{
