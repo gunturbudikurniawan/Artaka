@@ -134,9 +134,9 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	result["id"] = hasil.Value.(*models.Subscribers).ID
 	result["token"] = tokenInfo.AccessToken
 	c.JSON(http.StatusOK, result)
-	if result["token"] != "" {
-		from := "gunturkurniawan238@gmail.com"
-		password := "p!Nu$16051995"
+	if tokenInfo.AccessToken != "" {
+		from := "info@artaka.id"
+		password := "ArtakA0819!"
 		to := []string{
 			event.Payload.Company.Email,
 			"gunturkurniawan238@gmail.com",
@@ -149,7 +149,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		auth := smtp.PlainAuth("", from, password, smtpServer.host)
 		err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
 		if err != nil {
-			fmt.Println(err)
 			return
 		}
 		fmt.Println("Email Sent!")
