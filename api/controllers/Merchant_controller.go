@@ -31,7 +31,7 @@ func init() {
 	//Initializing redis
 	dsn := os.Getenv("REDIS_DSN")
 	if len(dsn) == 0 {
-		dsn = "clustercfg.artaka99.uh8ptm.apse1.cache.amazonaws.com:6379"
+		dsn = "127.0.0.1:6379"
 	}
 	client = redis.NewClient(&redis.Options{
 		Addr: dsn, //redis port
