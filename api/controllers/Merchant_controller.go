@@ -133,7 +133,9 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	result := make(map[string]interface{})
 	result["id"] = hasil.Value.(*models.Subscribers).ID
 	result["token"] = tokenInfo.AccessToken
+	result["success"] = "True"
 	c.JSON(http.StatusOK, result)
+	fmt.Println(tokenInfo.AccessToken + "================")
 	if tokenInfo.AccessToken != "" {
 		from := "info@artaka.id"
 		password := "ArtakA0819!"
