@@ -31,14 +31,17 @@ func init() {
 	//Initializing redis
 	dsn := os.Getenv("REDIS_DSN")
 	if len(dsn) == 0 {
-		dsn = "my-cluster-usahaku.uh8ptm.0001.apse1.cache.amazonaws.com:6379"
+		// dsn = "my-cluster-usahaku.uh8ptm.0001.apse1.cache.amazonaws.com:6379"
+		dsn = "localhost:6379"
+
 	}
 	client = redis.NewClient(&redis.Options{
 		Addr: dsn, //redis port
 	})
 	_, err := client.Ping().Result()
 	if err != nil {
-		panic(err)
+		// panic(err)
+		fmt.Println(err)
 	}
 }
 
@@ -53,16 +56,6 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 	}
 	claims, _ := token.Claims.(jwt.MapClaims)
 
-	formerSubscribers := models.Subscribers{}
-	err = server.DB.Debug().Model(models.Subscribers{}).Where("id = ?", claims["id"]).Take(&formerSubscribers).Error
-	if err != nil {
-		errList["User_invalid"] = "The user is does not exist"
-		c.JSON(http.StatusOK, gin.H{
-			"status": http.StatusOK,
-			"error":  errList,
-		})
-		return
-	}
 	var input models.FormUpdatePassword
 	if err := c.ShouldBindJSON(&input); err != nil {
 		fmt.Println(err)
@@ -78,10 +71,9 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 	formerMerchant := models.Subscribers{}
 	err = server.DB.Debug().Model(models.Subscribers{}).Where("id = ?", claims["id"]).Take(&formerMerchant).Error
 	if err != nil {
-		errList["User_invalid"] = "The user is does not exist"
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"status": http.StatusOK,
-			"error":  errList,
+			"status": "Failed",
+			"error":  "Token Not Valid",
 		})
 		return
 	}
@@ -92,8 +84,11 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 			"secret_password": input.Secret_password,
 		},
 	)
+
 	result := make(map[string]interface{})
 	result["status"] = "Success"
+	result["error"] = "null"
+
 	c.JSON(http.StatusOK, result)
 
 }
@@ -111,6 +106,14 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	event := models.Event{}
 	data, _ := ioutil.ReadAll(resp.Body)
 	_ = json.Unmarshal(data, &event)
+	if event.Payload.Company.PhoneNumber == "" && event.Payload.Company.Email == "" && event.Payload.Company.Name == "" {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
+			"success":   "false",
+			"errorCode": "INVALID_RESPONSE",
+			"message":   "The account " + event.Payload.Company.Name + " could not be found.",
+		})
+		return
+	}
 	x := event.Payload.Company.PhoneNumber
 	i := strings.Index(x, "+")
 	var phone string
@@ -119,6 +122,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	} else {
 		phone = "+" + event.Payload.Company.PhoneNumber
 	}
+
 	hasil := db.Create(&models.Subscribers{Create_dtm: time.Now(),
 		User_id:          phone,
 		Email:            event.Payload.Company.Email,
@@ -144,14 +148,12 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		return
 	}
 	result := make(map[string]interface{})
-	result["id"] = hasil.Value.(*models.Subscribers).ID
-	result["token"] = tokenInfo.AccessToken
-	result["success"] = "True"
+	result["success"] = "true"
+	result["accountIdentifier"] = tokenInfo.AccessToken
 	c.JSON(http.StatusOK, result)
-	fmt.Println(tokenInfo.AccessToken + "================")
-	if result["success"] == "True" {
-		from := "info@artaka.id"
-		password := "ArtakA0819!"
+	if result["success"] == "true" {
+		from := "gunturkurniawan238@gmail.com"
+		password := "payphone171116"
 		to := []string{
 			event.Payload.Company.Email,
 			"gunturkurniawan238@gmail.com",
@@ -163,6 +165,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			"This is the email body.\r\n" + "https://master.d3mr68pgup3qa4.amplifyapp.com/reset/" + tokenInfo.AccessToken)
 		auth := smtp.PlainAuth("", from, password, smtpServer.host)
 		err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
+		fmt.Println("==============", err)
 		if err != nil {
 			return
 		}

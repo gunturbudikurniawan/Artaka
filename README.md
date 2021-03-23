@@ -64,3 +64,8 @@ DB_PASSWORD=Artaka16!
 DB_NAME=mpos1
 DB_PORT=5432
 PORT1=5000
+
+REDIS_DSN=redis:6379
+
+ACCESS_SECRET=artakasecret
+REFRESH_SECRET=refreshsecret
