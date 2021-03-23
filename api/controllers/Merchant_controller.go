@@ -82,7 +82,7 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 		},
 	)
 	result := make(map[string]interface{})
-	result["Status"] = "Success"
+	result["status"] = "Success"
 	c.JSON(http.StatusOK, result)
 
 }
