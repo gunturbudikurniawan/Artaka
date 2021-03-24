@@ -47,14 +47,12 @@ func init() {
 func (server *Server) UpdatePassword(c *gin.Context) {
 	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
 	tokenString := strings.Split(tokenBearer, " ")[1]
-
 	token, err := jwt.Parse(tokenString, nil)
 	if err == nil {
 		c.JSON(http.StatusOK, "Token")
 
 	}
 	claims, _ := token.Claims.(jwt.MapClaims)
-
 	var input models.FormUpdatePassword
 	if err := c.ShouldBindJSON(&input); err != nil {
 		fmt.Println(err)
@@ -63,14 +61,13 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 	}
 	pass, err := bcrypt.GenerateFromPassword([]byte(input.Secret_password), bcrypt.DefaultCost)
 	if err != nil {
-		fmt.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Password Encryption  failed"})
 		return
 	}
 	formerMerchant := models.Subscribers{}
 	err = server.DB.Debug().Model(models.Subscribers{}).Where("id = ?", claims["id"]).Take(&formerMerchant).Error
 	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"status": "Failed",
 			"error":  "Token Not Valid",
 		})
@@ -94,13 +91,15 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 func (server *Server) CreateUsahaku(c *gin.Context) {
 
 	db := server.DB
-	keys := c.Request.URL.Query()
-	token := keys.Get("token")
-	resp, _ := http.Get("https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/events/" + token)
+	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
+	tokenString := strings.Split(tokenBearer, " ")[1]
+
+	resp, err := http.Get("https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/events/" + tokenString)
 	if resp.StatusCode != 200 {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
+
 	event := models.Event{}
 	data, _ := ioutil.ReadAll(resp.Body)
 	_ = json.Unmarshal(data, &event)
@@ -165,7 +164,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			"This is the email body.\r\n" + "https://master.d3mr68pgup3qa4.amplifyapp.com/reset/" + tokenInfo.AccessToken)
 		auth := smtp.PlainAuth("", from, password, smtpServer.host)
 		err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
-		fmt.Println("==============", err)
 		if err != nil {
 			return
 		}
@@ -189,7 +187,7 @@ func CreateToken(id uint32) (*models.TokenDetails, error) {
 
 	var err error
 	//Creating Access Token
-	os.Setenv("ACCESS_SECRET", "artaka") //this should be in an env file
+	os.Setenv("ACCESS_SECRET", "artaka")
 	atClaims := jwt.MapClaims{}
 	atClaims["authorized"] = true
 
