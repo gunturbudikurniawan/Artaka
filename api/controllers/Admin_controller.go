@@ -44,7 +44,6 @@ func (server *Server) CreateAdmin(c *gin.Context) {
 	}
 	adminCreated, err := admin.SaveAdmin(server.DB)
 	if err != nil {
-		// formattedError := formaterror.FormatError(err.Error())
 		c.JSON(http.StatusOK, gin.H{
 			"status":   "Failed",
 			"error":    "Email or Username Already Taken",
@@ -177,8 +176,6 @@ func (server *Server) SignInByPhone(phone, password string) (map[string]interfac
 
 	return adminData, nil
 }
-
-// Update Admin
 
 func (server *Server) UpdateAdmin(c *gin.Context) {
 

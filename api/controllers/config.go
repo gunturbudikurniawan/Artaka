@@ -38,7 +38,6 @@ func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, D
 	} else {
 		fmt.Println("Unknown Driver")
 	}
-	//database migration
 	server.DB.Debug().AutoMigrate(
 		&models.Admin{},
 		&models.Subscribers{},

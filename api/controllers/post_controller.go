@@ -166,7 +166,6 @@ func (server *Server) UpdatePost(c *gin.Context) {
 		})
 		return
 	}
-	// Start processing the request data
 	post := new(models.Post)
 	err = json.Unmarshal(body, &post)
 	if err != nil {
@@ -178,7 +177,7 @@ func (server *Server) UpdatePost(c *gin.Context) {
 		})
 		return
 	}
-	post.ID = origPost.ID //this is important to tell the model the post id to update, the other update field are set above
+	post.ID = origPost.ID
 	post.AuthorID = origPost.AuthorID
 
 	post.Prepare()
@@ -210,7 +209,6 @@ func (server *Server) UpdatePost(c *gin.Context) {
 func (server *Server) DeletePost(c *gin.Context) {
 
 	postID := c.Param("id")
-	// Is a valid post id given to us?
 	pid, err := strconv.ParseUint(postID, 10, 64)
 	if err != nil {
 		errList["Invalid_request"] = "Invalid Request"
@@ -223,7 +221,6 @@ func (server *Server) DeletePost(c *gin.Context) {
 
 	fmt.Println("this is delete post sir")
 
-	// Is this user authenticated?
 	uid, _, _, err := auth.ExtractTokenID(c.Request)
 	if err != nil {
 		errList["Unauthorized"] = "Unauthorized"
@@ -233,7 +230,6 @@ func (server *Server) DeletePost(c *gin.Context) {
 		})
 		return
 	}
-	// Check if the post exist
 	post := new(models.Post)
 	err = server.DB.Debug().Model(models.Post{}).Where("id = ?", pid).Take(&post).Error
 	if err != nil {
@@ -244,7 +240,6 @@ func (server *Server) DeletePost(c *gin.Context) {
 		})
 		return
 	}
-	// Is the authenticated user, the owner of this post?
 	if uid != post.AuthorID {
 		errList["Unauthorized"] = "Unauthorized"
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -253,7 +248,6 @@ func (server *Server) DeletePost(c *gin.Context) {
 		})
 		return
 	}
-	// If all the conditions are met, delete the post
 	_, err = post.DeleteAPost(server.DB)
 	if err != nil {
 		errList["Other_error"] = "Please try again later"
@@ -272,7 +266,6 @@ func (server *Server) DeletePost(c *gin.Context) {
 func (server *Server) GetUserPosts(c *gin.Context) {
 
 	userID := c.Param("id")
-	// Is a valid user id given to us?
 	uid, err := strconv.ParseUint(userID, 10, 64)
 	if err != nil {
 		errList["Invalid_request"] = "Invalid Request"
@@ -299,7 +292,6 @@ func (server *Server) GetUserPosts(c *gin.Context) {
 }
 func (server *Server) Showall(c *gin.Context) {
 
-	// Is this user authenticated?
 	_, referral_code, role, err := auth.ExtractTokenID(c.Request)
 	if err != nil {
 		errList["Unauthorized"] = "Unauthorized"
@@ -329,8 +321,6 @@ func (server *Server) Showall(c *gin.Context) {
 
 func (server *Server) LateRespon(c *gin.Context) {
 	uid, referral_code, role, err := auth.ExtractTokenID(c.Request)
-	fmt.Println(referral_code)
-	fmt.Println(role)
 	fmt.Println(uid)
 	if err != nil {
 		errList["Unauthorized"] = "Unauthorized"
@@ -437,7 +427,6 @@ func (server *Server) ShowAllReferral(c *gin.Context) {
 }
 
 func (server *Server) ShowOnlineSalesPayment(c *gin.Context) {
-	// Is this user authenticated?
 	uid, referral_code, role, err := auth.ExtractTokenID(c.Request)
 	fmt.Println(referral_code)
 	fmt.Println(role)

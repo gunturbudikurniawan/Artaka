@@ -28,18 +28,16 @@ var jwtKey = []byte("my_secret_key")
 var client *redis.Client
 
 func init() {
-	//Initializing redis
 	dsn := os.Getenv("REDIS_DSN")
 	if len(dsn) == 0 {
 		// dsn = "127.0.0.1:6379"
 		dsn = "my-cluster-usahaku.uh8ptm.0001.apse1.cache.amazonaws.com:6379"
 	}
 	client = redis.NewClient(&redis.Options{
-		Addr: dsn, //redis port
+		Addr: dsn,
 	})
 	_, err := client.Ping().Result()
 	if err != nil {
-		// panic(err)
 		fmt.Println(err)
 	}
 }
@@ -95,6 +93,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	tokenString := strings.Split(tokenBearer, " ")[1]
 
 	resp, err := http.Get("https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/events/" + tokenString)
+
 	if resp.StatusCode != 200 {
 		c.Status(http.StatusUnauthorized)
 		return
@@ -174,7 +173,8 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 type smtpServer struct {
 	host string
 	port string
-} // Address URI to smtp server
+}
+
 func (s *smtpServer) Address() string {
 	return s.host + ":" + s.port
 }
@@ -186,7 +186,6 @@ func CreateToken(id uint32) (*models.TokenDetails, error) {
 	tokenInfo.RefreshTokenExpires = time.Now().Add(time.Hour * 24 * 7).Unix()
 
 	var err error
-	//Creating Access Token
 	os.Setenv("ACCESS_SECRET", "artaka")
 	atClaims := jwt.MapClaims{}
 	atClaims["authorized"] = true
@@ -198,8 +197,7 @@ func CreateToken(id uint32) (*models.TokenDetails, error) {
 	if err != nil {
 		return nil, err
 	}
-	//Creating Refresh Token
-	os.Setenv("REFRESH_SECRET", "artaka") //this should be in an env file
+	os.Setenv("REFRESH_SECRET", "artaka")
 	rtClaims := jwt.MapClaims{}
 	rtClaims["username"] = id
 	rtClaims["exp"] = tokenInfo.RefreshTokenExpires
@@ -213,7 +211,7 @@ func CreateToken(id uint32) (*models.TokenDetails, error) {
 }
 
 func CreateAuth(id string, td *models.TokenDetails) error {
-	at := time.Unix(td.AccessTokenExpires, 0) //converting Unix to UTC(to Time object)
+	at := time.Unix(td.AccessTokenExpires, 0)
 	rt := time.Unix(td.RefreshTokenExpires, 0)
 	now := time.Now()
 
@@ -283,7 +281,6 @@ func (server *Server) CreateMerchants(c *gin.Context) {
 
 func (server *Server) LoginMerchant(c *gin.Context) {
 
-	//clear previous error if any
 	errList = map[string]string{}
 
 	body, err := ioutil.ReadAll(c.Request.Body)
@@ -349,12 +346,10 @@ func (server *Server) SignInMerchant(email, password string) (map[string]interfa
 		fmt.Println("this is the error hashing the password: ", err)
 		return nil, err
 	}
-	// token, err := auth.CreateToken(merchant.ID)
 	if err != nil {
 		fmt.Println("this is the error creating the token: ", err)
 		return nil, err
 	}
-	// merchantData["token"] = token
 	merchantData["id"] = merchant.ID
 	merchantData["email"] = merchant.Email
 
@@ -453,7 +448,6 @@ func (server *Server) UpdateMerchant(c *gin.Context) {
 			})
 			return
 		}
-		//if they do, check that the former password is correct
 		err = security.VerifyPassword(formerMerchant.Secret_password, requestBody["current_password"])
 		if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
 			errList["Password_mismatch"] = "The password not correct"
@@ -716,7 +710,6 @@ func (server *Server) CreateOnlineSales(c *gin.Context) {
 	})
 }
 func (server *Server) GetCertainSubscribers(c *gin.Context) {
-	// Is this user authenticated?
 	_, referral_code, role, err := auth.ExtractTokenID(c.Request)
 	if err != nil {
 		errList["Unauthorized"] = "Unauthorized"

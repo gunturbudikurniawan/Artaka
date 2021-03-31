@@ -69,3 +69,15 @@ REDIS_DSN=redis:6379
 
 ACCESS_SECRET=artakasecret
 REFRESH_SECRET=refreshsecret
+
+curl -i -X POST -H "Content-Type: application/json" https://monitoring.alih.in/api/merchant/regis?token=7a69ff49-26b0-4395-b62e-f46ef4ef7ef6
+
+curl --location --request POST 'https://monitoring.alih.in/api/merchant/update' \
+--header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2MTkyNTI3MTUsImlkIjoxNTA5fQ.vsJeUJVO7gscyFX4GI0hJMzI4xpZIdzkobbyXzSTVAg' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+"secret_password":"passssaaaaaaaaaaaaaa"
+}'
+
+curl --location --request POST 'https://monitoring.alih.in/api/merchant/regis' \
+--header 'Authorization: Bearer 7a69ff49-26b0-4395-b62e-f46ef4ef7ef6'
