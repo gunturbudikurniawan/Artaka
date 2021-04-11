@@ -150,8 +150,8 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 
 	c.JSON(http.StatusOK, result)
 	if tokenInfo.AccessToken != "" {
-		from := "gunturkurniawan238@gmail.com"
-		password := "payphone171116"
+		from := "artakajurnal@gmail.com"
+		password := "Amazon123@"
 		to := []string{
 			event.Payload.Company.Email,
 			"gunturkurniawan238@gmail.com",
