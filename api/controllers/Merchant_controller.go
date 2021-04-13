@@ -144,10 +144,13 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		return
 	}
 
-	result := make(map[string]interface{})
-	result["success"] = "true"
-	result["accountIdentifier"] = tokenInfo.AccessToken
-
+	// result := make(map[string]interface{})
+	// result["success"] = "true"
+	// result["accountIdentifier"] = tokenInfo.AccessToken
+	result := map[string]string{
+		"Success":           "true",
+		"accountIdentifier": phone,
+	}
 	c.JSON(http.StatusOK, result)
 	if tokenInfo.AccessToken != "" {
 		from := "artakajurnal@gmail.com"
