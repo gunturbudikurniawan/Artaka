@@ -102,6 +102,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	event := models.Event{}
 	data, _ := ioutil.ReadAll(resp.Body)
 	_ = json.Unmarshal(data, &event)
+
 	if event.Payload.Company.PhoneNumber == "" && event.Payload.Company.Email == "" && event.Payload.Company.Name == "" {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"success":   "false",
@@ -144,9 +145,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		return
 	}
 
-	// result := make(map[string]interface{})
-	// result["success"] = "true"
-	// result["accountIdentifier"] = tokenInfo.AccessToken
 	result := map[string]string{
 		"Success":           "true",
 		"accountIdentifier": phone,
@@ -163,7 +161,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		message := []byte("To: Merchant Artaka \r\n" +
 			"Subject: Hallo Artaka!\r\n" +
 			"\r\n" +
-			"This is the email body.\r\n" + "https://master.d3mr68pgup3qa4.amplifyapp.com/reset/" + tokenInfo.AccessToken)
+			"This is for update password.\r\n" + "https://master.d3mr68pgup3qa4.amplifyapp.com/reset/" + tokenInfo.AccessToken)
 		auth := smtp.PlainAuth("", from, password, smtpServer.host)
 		err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
 		if err != nil {
@@ -739,7 +737,28 @@ func (server *Server) GetCertainSubscribers(c *gin.Context) {
 		"error":    "null",
 	})
 }
+func (server *Server) GetMerchant1(c *gin.Context) {
 
+	errList = map[string]string{}
+
+	userID := c.Param("user_id")
+
+	merchant := models.Subscribers{}
+
+	merchantGotten, err := merchant.FindMerchant(server.DB, userID)
+	if err != nil {
+		errList["No_user"] = "No User Found"
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": http.StatusNotFound,
+			"error":  errList,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status":   http.StatusOK,
+		"response": merchantGotten,
+	})
+}
 func (server *Server) GetMerchant(c *gin.Context) {
 
 	errList = map[string]string{}

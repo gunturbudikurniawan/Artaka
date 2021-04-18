@@ -207,6 +207,18 @@ func (m *Subscribers) Validate(action string) map[string]string {
 	}
 	return errorMessages
 }
+func (m *Subscribers) FindMerchant(db *gorm.DB, user_id string) (*Subscribers, error) {
+	var err error
+	err = db.Debug().Model(Subscribers{}).Where("user_id > ?", user_id).Take(&m).Error
+	if err != nil {
+		return &Subscribers{}, err
+	}
+	if gorm.IsRecordNotFoundError(err) {
+		return &Subscribers{}, errors.New("User Not Found")
+	}
+	return m, err
+}
+
 func (m *Subscribers) SaveUser(db *gorm.DB) (*Subscribers, error) {
 
 	var err error
