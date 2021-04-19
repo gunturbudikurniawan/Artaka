@@ -1,6 +1,52 @@
 package controllers
 
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	ginserver "github.com/go-oauth2/gin-server"
+	"gopkg.in/oauth2.v3/manage"
+	"gopkg.in/oauth2.v3/models"
+	"gopkg.in/oauth2.v3/server"
+	"gopkg.in/oauth2.v3/store"
+)
+
 func (s *Server) initialRoutes() {
+	manager := manage.NewDefaultManager()
+
+	// token store
+	manager.MustTokenStorage(store.NewFileTokenStore("data.db"))
+
+	// client store
+	clientStore := store.NewClientStore()
+	clientStore.Set("000000", &models.Client{
+		ID:     "000000",
+		Secret: "999999",
+		Domain: "https://monitoring.alih.in",
+	})
+	manager.MapClientStorage(clientStore)
+
+	// Initialize the oauth2 service
+	ginserver.InitServer(manager)
+	ginserver.SetAllowGetAccessRequest(true)
+	ginserver.SetClientInfoHandler(server.ClientFormHandler)
+	auth := s.Router.Group("/oauth2")
+	{
+		auth.GET("/token", ginserver.HandleTokenRequest)
+	}
+	api := s.Router.Group("/api")
+	{
+		api.Use(ginserver.HandleTokenVerify())
+		api.GET("/test", func(c *gin.Context) {
+			ti, exists := c.Get(ginserver.DefaultConfig.TokenKey)
+			if exists {
+				c.JSON(http.StatusOK, ti)
+				return
+			}
+			c.String(http.StatusOK, "not found")
+		})
+	}
+
 	v1 := s.Router.Group("/api/admin")
 	{
 		v1.GET("/transactionsaved", s.GetLastSaved)
