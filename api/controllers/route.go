@@ -37,7 +37,7 @@ func (s *Server) initialRoutes() {
 	api := s.Router.Group("/api")
 	{
 		api.Use(ginserver.HandleTokenVerify())
-		api.GET("/test", func(c *gin.Context) {
+		api.POST("/test?eventURL=https://monitoring.alih.in/api/merchant/regis", func(c *gin.Context) {
 			ti, exists := c.Get(ginserver.DefaultConfig.TokenKey)
 			if exists {
 				c.JSON(http.StatusOK, ti)
