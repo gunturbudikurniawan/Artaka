@@ -37,7 +37,7 @@ func (s *Server) initialRoutes() {
 	api := s.Router.Group("/api")
 	{
 		api.Use(ginserver.HandleTokenVerify())
-		api.POST("/regis", s.CreateUsahaku, func(c *gin.Context) {
+		api.POST("/regis", func(c *gin.Context) {
 			ti, exists := c.Get(ginserver.DefaultConfig.TokenKey)
 			if exists {
 				c.JSON(http.StatusOK, ti)
@@ -48,7 +48,7 @@ func (s *Server) initialRoutes() {
 					"errorCode": "ACCOUNT_NOT_FOUND",
 				})
 			}
-		})
+		}, s.CreateUsahaku)
 
 		api.GET("/test", func(c *gin.Context) {
 			ti, exists := c.Get(ginserver.DefaultConfig.TokenKey)
