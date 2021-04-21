@@ -22,7 +22,7 @@ func (s *Server) initialRoutes() {
 	clientStore.Set("000000", &models.Client{
 		ID:     "001100",
 		Secret: "990099",
-		Domain: "https://monitoring.alih.in",
+		// Domain: "https://monitoring.alih.in",
 	})
 	manager.MapClientStorage(clientStore)
 
