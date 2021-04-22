@@ -16,7 +16,7 @@ func (s *Server) initialRoutes() {
 	manager := manage.NewDefaultManager()
 
 	// token store
-	manager.MustTokenStorage(store.NewMemoryTokenStore())
+	manager.MustTokenStorage(store.NewFileTokenStore("data.db"))
 	// client store
 	clientStore := store.NewClientStore()
 	clientStore.Set(os.Getenv("GOOGLE_CLIENT_ID"), &models.Client{
