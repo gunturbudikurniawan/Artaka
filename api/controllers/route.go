@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	ginserver "github.com/go-oauth2/gin-server"
@@ -15,13 +16,12 @@ func (s *Server) initialRoutes() {
 	manager := manage.NewDefaultManager()
 
 	// token store
-	manager.MustTokenStorage(store.NewFileTokenStore("data.db"))
-
+	manager.MustTokenStorage(store.NewMemoryTokenStore())
 	// client store
 	clientStore := store.NewClientStore()
-	clientStore.Set("000000", &models.Client{
-		ID:     "995987884824-0unfclcr70dga4dqk58g9tdto3gjdhvt.apps.googleusercontent.com",
-		Secret: "QRhce4HadpVf8If6HDGNqvar",
+	clientStore.Set(os.Getenv("GOOGLE_CLIENT_ID"), &models.Client{
+		ID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		Secret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		Domain: "https://monitoring.alih.in",
 	})
 	manager.MapClientStorage(clientStore)
@@ -50,18 +50,6 @@ func (s *Server) initialRoutes() {
 			}
 		}, s.CreateUsahaku)
 
-		api.GET("/test", func(c *gin.Context) {
-			ti, exists := c.Get(ginserver.DefaultConfig.TokenKey)
-			if exists {
-				c.JSON(http.StatusOK, ti)
-				return
-			} else {
-				c.JSON(http.StatusCreated, gin.H{
-					"success":   "False",
-					"errorCode": "ACCOUNT_NOT_FOUND",
-				})
-			}
-		})
 	}
 
 	v1 := s.Router.Group("/api/admin")
