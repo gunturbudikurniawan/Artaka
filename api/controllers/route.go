@@ -22,7 +22,7 @@ func (s *Server) initialRoutes() {
 	clientStore.Set(os.Getenv("GOOGLE_CLIENT_ID"), &models.Client{
 		ID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		Secret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		Domain: "http://localhost",
+		Domain: "https://monitoring.alih.in",
 	})
 	manager.MapClientStorage(clientStore)
 
