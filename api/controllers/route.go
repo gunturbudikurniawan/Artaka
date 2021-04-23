@@ -22,7 +22,7 @@ func (s *Server) initialRoutes() {
 	clientStore.Set(os.Getenv("GOOGLE_CLIENT_ID"), &models.Client{
 		ID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		Secret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		Domain: "https://monitoring.alih.in",
+		Domain: "http://localhost",
 	})
 	manager.MapClientStorage(clientStore)
 
@@ -32,12 +32,13 @@ func (s *Server) initialRoutes() {
 	ginserver.SetClientInfoHandler(server.ClientFormHandler)
 	auth := s.Router.Group("/oauth2")
 	{
-		auth.GET("/token", ginserver.HandleTokenRequest)
+		auth.POST("/token", ginserver.HandleTokenRequest)
 	}
+
 	api := s.Router.Group("/api")
 	{
 		api.Use(ginserver.HandleTokenVerify())
-		api.POST("/regis", s.CreateUsahaku, func(c *gin.Context) {
+		api.POST("/regis/:eventURL/:tokenURL", s.CreateUsahaku, func(c *gin.Context) {
 			ti, exists := c.Get(ginserver.DefaultConfig.TokenKey)
 			if exists {
 				c.JSON(http.StatusOK, ti)
@@ -49,7 +50,6 @@ func (s *Server) initialRoutes() {
 				})
 			}
 		})
-
 	}
 
 	v1 := s.Router.Group("/api/admin")

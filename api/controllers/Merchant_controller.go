@@ -87,13 +87,11 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 }
 
 func (server *Server) CreateUsahaku(c *gin.Context) {
-
 	db := server.DB
-	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
-	tokenString := strings.Split(tokenBearer, " ")[1]
-
-	resp, err := http.Get("https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/events/" + tokenString)
-
+	tokenURL := c.Param("tokenURL")
+	c.String(http.StatusOK, "Hello %s", tokenURL)
+	eventURL := c.Param("eventURL")
+	resp, err := http.Get(eventURL)
 	if resp.StatusCode != 200 {
 		c.Status(http.StatusUnauthorized)
 		return
@@ -103,7 +101,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	data, _ := ioutil.ReadAll(resp.Body)
 	_ = json.Unmarshal(data, &event)
 
-	if event.Payload.Company.PhoneNumber == "" && event.Payload.Company.Email == "" && event.Payload.Company.Name == "" {
+	if event.Creator.Address.Phone == "" && event.Creator.Email == "" && event.Creator.Address.FullName == "" {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"success":   "false",
 			"errorCode": "INVALID_RESPONSE",
@@ -111,19 +109,19 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		})
 		return
 	}
-	x := event.Payload.Company.PhoneNumber
+	x := event.Creator.Address.Phone
 	i := strings.Index(x, "+")
 	var phone string
 	if i > -1 {
-		phone = event.Payload.Company.PhoneNumber
+		phone = event.Creator.Address.Phone
 	} else {
-		phone = "+" + event.Payload.Company.PhoneNumber
+		phone = "+" + event.Creator.Address.Phone
 	}
 
 	hasil := db.Create(&models.Subscribers{Create_dtm: time.Now(),
 		User_id:          phone,
-		Email:            event.Payload.Company.Email,
-		Owner_name:       event.Payload.Company.Name,
+		Email:            event.Creator.Email,
+		Owner_name:       event.Creator.Address.FullName,
 		Secret_password:  "",
 		Fcm_token:        "",
 		Idcard_name:      "",
@@ -154,7 +152,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		from := "artakajurnal@gmail.com"
 		password := "Amazon123@"
 		to := []string{
-			event.Payload.Company.Email,
+			event.Creator.Email,
 			"gunturkurniawan238@gmail.com",
 		}
 		smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}

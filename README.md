@@ -81,3 +81,5 @@ curl --location --request POST 'https://monitoring.alih.in/api/merchant/update' 
 
 curl --location --request POST 'https://monitoring.alih.in/api/merchant/regis' \
 --header 'Authorization: Bearer 7a69ff49-26b0-4395-b62e-f46ef4ef7ef6'
+
+curl --location --request POST 'https://monitoring.alih.in/api/merchant/regiss?eventUrl=https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/events/7a69ff49-26b0-4395-b62e-f46ef4ef7ef6' --header 'Authorization: Bearer 7a69ff49-26b0-4395-b62e-f46ef4ef7ef6' --noproxy "\*" -k
