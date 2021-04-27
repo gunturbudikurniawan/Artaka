@@ -156,11 +156,13 @@ func (server *Server) GetToken(c *gin.Context) {
 		}
 		token, err := jwt.Parse(tokenInfo.AccessToken, nil)
 		claims, _ := token.Claims.(jwt.MapClaims)
-		fmt.Println("halooo", claims["exp"])
+		exp := fmt.Sprintf("%0.f", claims["exp"])
+
 		result := map[string]string{
-			"Success":           "true",
+			"success":           "true",
 			"accountIdentifier": tokenInfo.AccessToken,
-			// "expires_id":        claims["exp"].(string),
+			"expires_in":        exp,
+			"scope":             service.Scope,
 		}
 		c.JSON(http.StatusOK, result)
 	}
@@ -207,6 +209,16 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	event := models.Event{}
 	data, _ := ioutil.ReadAll(resp.Body)
 	_ = json.Unmarshal(data, &event)
+	formerSubscriber := models.Subscribers{}
+	err = db.Debug().Model(models.Subscribers{}).Where("email = ?", event.Creator.Email).Take(&formerSubscriber).Error
+	if err == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"success":   "false",
+			"errorCode": "USER_ALREADY_EXISTS",
+			"message":   "Optional message about the user already existing on ISV",
+		})
+		return
+	}
 
 	if event.Creator.Address.Phone == "" && event.Creator.Email == "" && event.Creator.Address.FullName == "" {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
