@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/smtp"
 	"os"
@@ -86,11 +87,117 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 
 }
 
+const USERNAME = "batman"
+const PASSWORD = "secret"
+
+func (server *Server) GetToken(c *gin.Context) {
+	username, password, ok := c.Request.BasicAuth()
+	isValid := (username == USERNAME) && (password == PASSWORD)
+	if !ok {
+		c.JSON(http.StatusCreated, gin.H{
+			"success":   "False",
+			"errorCode": "ACCOUNT_NOT_FOUND",
+		})
+	} else if !isValid {
+		c.JSON(http.StatusCreated, gin.H{
+			"success":   "False",
+			"errorCode": "NOT_FOUND",
+		})
+	}
+	body, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		restErr := errors.RestErr{
+			Message: "Invalid Json Body",
+			Status:  "Failed",
+			Error:   "Bad_request",
+		}
+		c.JSON(http.StatusBadRequest, restErr)
+		return
+	}
+	service := models.Service_client{}
+
+	err = json.Unmarshal(body, &service)
+	if err != nil {
+		restErr := errors.RestErr{
+			Message: "Cannot unmarshal body",
+			Status:  "Failed",
+			Error:   "Unmarshal_error",
+		}
+		c.JSON(http.StatusOK, restErr)
+		return
+	}
+	if service.GrantType != "client_credentials" {
+		restErr := errors.RestErr{
+			Message: "Please Check Client Credentials",
+			Status:  "Failed",
+			Error:   "Unmarshal_error",
+		}
+		c.JSON(http.StatusBadRequest, restErr)
+		return
+	} else if service.Scope != "post_subscription_events" {
+		restErr := errors.RestErr{
+			Message: "Please Check Scope",
+			Status:  "Failed",
+			Error:   "Unmarshal_error",
+		}
+		c.JSON(http.StatusBadRequest, restErr)
+		return
+	} else {
+
+		tokenInfo, err := CreateToken(rand.Uint32())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		err = CreateAuth("1", tokenInfo)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		token, err := jwt.Parse(tokenInfo.AccessToken, nil)
+		claims, _ := token.Claims.(jwt.MapClaims)
+		fmt.Println("halooo", claims["exp"])
+		result := map[string]string{
+			"Success":           "true",
+			"accountIdentifier": tokenInfo.AccessToken,
+			// "expires_id":        claims["exp"].(string),
+		}
+		c.JSON(http.StatusOK, result)
+	}
+}
+
 func (server *Server) CreateUsahaku(c *gin.Context) {
+	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
+	tokenString := strings.Split(tokenBearer, " ")[1]
+
+	token, err := extractToken(tokenString, "artaka")
+	if err != nil {
+		fmt.Println("error : ", err)
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
+			"success":   "false",
+			"errorCode": "INVALID_RESPONSE",
+			"message":   "invalid token.",
+		})
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok && token.Valid {
+		id := fmt.Sprintf("%0.f", claims["id"])
+		fmt.Println("id from token : ", id)
+
+		val := client.Get(id)
+		if val == nil {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{
+				"success":   "false",
+				"errorCode": "INVALID_RESPONSE",
+				"message":   "The account could not be found.",
+			})
+			return
+		}
+	}
 	db := server.DB
-	tokenURL := c.Param("tokenURL")
-	c.String(http.StatusOK, "Hello %s", tokenURL)
-	eventURL := c.Param("eventURL")
+	eventURL := c.Query("eventURL")
 	resp, err := http.Get(eventURL)
 	if resp.StatusCode != 200 {
 		c.Status(http.StatusUnauthorized)
@@ -178,9 +285,26 @@ func (s *smtpServer) Address() string {
 	return s.host + ":" + s.port
 }
 
+// extractClaims : extract claim from jwt token
+func extractToken(jwtToken, secret string) (*jwt.Token, error) {
+	token, err := jwt.Parse(jwtToken, func(token *jwt.Token) (interface{}, error) {
+		//Make sure that the token method conform to "SigningMethodHMAC"
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(secret), nil
+	})
+	if err != nil {
+		fmt.Println("error = ", err)
+		return nil, err
+	}
+
+	return token, nil
+}
+
 func CreateToken(id uint32) (*models.TokenDetails, error) {
 	tokenInfo := &models.TokenDetails{}
-	tokenInfo.AccessTokenExpires = time.Now().AddDate(0, 1, 0).Unix()
+	tokenInfo.AccessTokenExpires = time.Now().Add(time.Minute * 15).Unix()
 
 	tokenInfo.RefreshTokenExpires = time.Now().Add(time.Hour * 24 * 7).Unix()
 
@@ -192,7 +316,7 @@ func CreateToken(id uint32) (*models.TokenDetails, error) {
 	atClaims["id"] = id
 	atClaims["exp"] = tokenInfo.AccessTokenExpires
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-	tokenInfo.AccessToken, err = at.SignedString([]byte("ACCESS_SECRET"))
+	tokenInfo.AccessToken, err = at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +325,7 @@ func CreateToken(id uint32) (*models.TokenDetails, error) {
 	rtClaims["username"] = id
 	rtClaims["exp"] = tokenInfo.RefreshTokenExpires
 	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
-	tokenInfo.RefreshToken, err = rt.SignedString([]byte("REFRESH_SECRET"))
+	tokenInfo.RefreshToken, err = rt.SignedString([]byte(os.Getenv("REFRESH_SECRET")))
 	if err != nil {
 		return nil, err
 	}

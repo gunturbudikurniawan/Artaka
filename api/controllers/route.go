@@ -1,57 +1,31 @@
 package controllers
 
-import (
-	"net/http"
-	"os"
-
-	"github.com/gin-gonic/gin"
-	ginserver "github.com/go-oauth2/gin-server"
-	"gopkg.in/oauth2.v3/manage"
-	"gopkg.in/oauth2.v3/models"
-	"gopkg.in/oauth2.v3/server"
-	"gopkg.in/oauth2.v3/store"
-)
-
 func (s *Server) initialRoutes() {
-	manager := manage.NewDefaultManager()
+	// manager := manage.NewDefaultManager()
 
-	// token store
-	manager.MustTokenStorage(store.NewFileTokenStore("data.db"))
-	// client store
-	clientStore := store.NewClientStore()
-	clientStore.Set(os.Getenv("GOOGLE_CLIENT_ID"), &models.Client{
-		ID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		Secret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		Domain: "https://monitoring.alih.in",
-	})
-	manager.MapClientStorage(clientStore)
+	// // token store
+	// manager.MustTokenStorage(store.NewFileTokenStore("data.db"))
 
-	// Initialize the oauth2 service
-	ginserver.InitServer(manager)
-	ginserver.SetAllowGetAccessRequest(true)
-	ginserver.SetClientInfoHandler(server.ClientFormHandler)
-	auth := s.Router.Group("/oauth2")
-	{
-		auth.POST("/token", ginserver.HandleTokenRequest)
-	}
+	// // client store
+	// clientStore := store.NewClientStore()
+	// clientStore.Set("000000", &models.Client{
+	// 	ID:     "000000",
+	// 	Secret: "999999",
+	// 	Domain: "http://localhost",
+	// })
+	// manager.MapClientStorage(clientStore)
 
-	api := s.Router.Group("/api")
-	{
-		api.Use(ginserver.HandleTokenVerify())
-		api.POST("/regis/:eventURL/:tokenURL", s.CreateUsahaku, func(c *gin.Context) {
-			ti, exists := c.Get(ginserver.DefaultConfig.TokenKey)
-			if exists {
-				c.JSON(http.StatusOK, ti)
-				return
-			} else {
-				c.JSON(http.StatusCreated, gin.H{
-					"success":   "False",
-					"errorCode": "ACCOUNT_NOT_FOUND",
-				})
-			}
-		})
-	}
+	// // Initialize the oauth2 service
+	// ginserver.InitServer(manager)
+	// ginserver.SetAllowGetAccessRequest(true)
+	// ginserver.SetClientInfoHandler(server.ClientFormHandler)
 
+	// g := gin.Default()
+
+	// auth := g.Group("/oauth2")
+	// {
+	// 	auth.GET("/token", ginserver.HandleTokenRequest)
+	// }
 	v1 := s.Router.Group("/api/admin")
 	{
 		v1.GET("/transactionsaved", s.GetLastSaved)
@@ -73,6 +47,8 @@ func (s *Server) initialRoutes() {
 
 	v2 := s.Router.Group("/api/merchant")
 	{
+		v2.POST("/token", s.GetToken)
+
 		v2.POST("/regis", s.CreateUsahaku)
 		v2.POST("/update", s.UpdatePassword)
 		v2.GET("/:user_id", s.GetMerchant1)
