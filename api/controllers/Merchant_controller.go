@@ -159,10 +159,10 @@ func (server *Server) GetToken(c *gin.Context) {
 		exp := fmt.Sprintf("%0.f", claims["exp"])
 
 		result := map[string]string{
-			"success":           "true",
-			"accountIdentifier": tokenInfo.AccessToken,
-			"expires_in":        exp,
-			"scope":             service.Scope,
+			"success":      "true",
+			"access_token": tokenInfo.AccessToken,
+			"expires_in":   exp,
+			"scope":        service.Scope,
 		}
 		c.JSON(http.StatusOK, result)
 	}
