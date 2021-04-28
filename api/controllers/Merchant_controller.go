@@ -130,7 +130,7 @@ func (server *Server) GetToken(c *gin.Context) {
 		restErr := errors.RestErr{
 			Message: "Please Check Client Credentials",
 			Status:  "Failed",
-			Error:   "Unmarshal_error",
+			Error:   "True",
 		}
 		c.JSON(http.StatusBadRequest, restErr)
 		return
@@ -138,7 +138,7 @@ func (server *Server) GetToken(c *gin.Context) {
 		restErr := errors.RestErr{
 			Message: "Please Check Scope",
 			Status:  "Failed",
-			Error:   "Unmarshal_error",
+			Error:   "True",
 		}
 		c.JSON(http.StatusBadRequest, restErr)
 		return
@@ -215,7 +215,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"success":   "false",
 			"errorCode": "USER_ALREADY_EXISTS",
-			"message":   "Optional message about the user already existing on ISV",
+			"message":   event.Creator.Address.FullName + "USER_ALREADY_EXISTS IN ARTAKA",
 		})
 		return
 	}

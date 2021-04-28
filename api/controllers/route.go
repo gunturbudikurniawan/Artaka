@@ -44,10 +44,12 @@ func (s *Server) initialRoutes() {
 		v1.PUT("/update/:id", s.UpdateAdmin)
 
 	}
-
+	usahaku99 := s.Router.Group("/oauth2")
+	{
+		usahaku99.POST("/token", s.GetToken)
+	}
 	v2 := s.Router.Group("/api/merchant")
 	{
-		v2.POST("/token", s.GetToken)
 
 		v2.POST("/regis", s.CreateUsahaku)
 		v2.POST("/update", s.UpdatePassword)
