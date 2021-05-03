@@ -87,8 +87,8 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 
 }
 
-const USERNAME = "batman"
-const PASSWORD = "secret"
+const USERNAME = "1P0ThZPfxL"
+const PASSWORD = "gKOAFuXVSjOzUnzjTeMe"
 
 func (server *Server) GetToken(c *gin.Context) {
 	username, password, ok := c.Request.BasicAuth()
