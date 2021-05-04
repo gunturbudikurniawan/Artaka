@@ -1,6 +1,6 @@
 package models
 
 type Service_client struct {
-	GrantType string `json:"granttype"`
+	GrantType string `json:"grant_type"`
 	Scope     string `json:"scope"`
 }
