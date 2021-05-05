@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/smtp"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -87,10 +88,12 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 
 }
 
-const USERNAME = "1P0ThZPfxL"
+const USERNAME = "integrateartaka"
 const PASSWORD = "gKOAFuXVSjOzUnzjTeMe"
 
 func (server *Server) GetToken(c *gin.Context) {
+	grant := c.PostForm("grant_type")
+	scope := c.PostForm("scope")
 	username, password, ok := c.Request.BasicAuth()
 	isValid := (username == USERNAME) && (password == PASSWORD)
 	if !ok {
@@ -103,47 +106,23 @@ func (server *Server) GetToken(c *gin.Context) {
 			"success":   "False",
 			"errorCode": "NOT_FOUND",
 		})
-	}
-	body, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		restErr := errors.RestErr{
-			Message: "Invalid Json Body",
-			Status:  "Failed",
-			Error:   "Bad_request",
-		}
-		c.JSON(http.StatusBadRequest, restErr)
-		return
-	}
-	service := models.Service_client{}
-
-	err = json.Unmarshal(body, &service)
-	if err != nil {
-		restErr := errors.RestErr{
-			Message: "Cannot unmarshal body",
-			Status:  "Failed",
-			Error:   "Unmarshal_error",
-		}
-		c.JSON(http.StatusOK, restErr)
-		return
-	}
-	if service.GrantType != "client_credentials" {
+	} else if grant != "client_credentials" {
 		restErr := errors.RestErr{
 			Message: "Please Check Client Credentials",
 			Status:  "Failed",
 			Error:   "True",
 		}
-		c.JSON(http.StatusBadRequest, restErr)
+		c.JSON(http.StatusOK, restErr)
 		return
-	} else if service.Scope != "post_subscription_events" {
+	} else if scope != "post_subscription_events" {
 		restErr := errors.RestErr{
 			Message: "Please Check Scope",
 			Status:  "Failed",
 			Error:   "True",
 		}
-		c.JSON(http.StatusBadRequest, restErr)
+		c.JSON(http.StatusOK, restErr)
 		return
 	} else {
-
 		tokenInfo, err := CreateToken(rand.Uint32())
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -162,19 +141,122 @@ func (server *Server) GetToken(c *gin.Context) {
 			"success":      "true",
 			"access_token": tokenInfo.AccessToken,
 			"expires_in":   exp,
-			"scope":        service.Scope,
+			"scope":        scope,
 		}
 		c.JSON(http.StatusOK, result)
 	}
 }
 
+const USERNAME1 = "1P0TPfxL"
+const PASSWORD1 = "gKOAFuXjOzUnzjTeMe"
+
+func (server *Server) Examp(c *gin.Context) {
+	grant := c.PostForm("grant_type")
+	scope := c.PostForm("scope")
+	username, password, ok := c.Request.BasicAuth()
+	isValid := (username == USERNAME1) && (password == PASSWORD1)
+	if !ok {
+		c.JSON(http.StatusCreated, gin.H{
+			"success":   "False",
+			"errorCode": "ACCOUNT_NOT_FOUND",
+		})
+	} else if !isValid {
+		c.JSON(http.StatusCreated, gin.H{
+			"success":   "False",
+			"errorCode": "NOT_FOUND",
+		})
+	}
+	if grant != "client_credentials" {
+		restErr := errors.RestErr{
+			Message: "Please Check Client Credentials",
+			Status:  "Failed",
+			Error:   "True",
+		}
+		c.JSON(http.StatusOK, restErr)
+		return
+	} else if scope != "ROLE_APPLICATION" {
+		restErr := errors.RestErr{
+			Message: "Please Check Scope",
+			Status:  "Failed",
+			Error:   "True",
+		}
+		c.JSON(http.StatusOK, restErr)
+		return
+	}
+}
+func dumpMap(space string, m map[string]interface{}) {
+	for k, v := range m {
+		if mv, ok := v.(map[string]interface{}); ok {
+			fmt.Printf("{ \"%v\": \n", k)
+			dumpMap(space+"\t", mv)
+			fmt.Printf("}\n")
+		} else {
+			fmt.Printf("%v %v : %v\n", space, k, v)
+		}
+	}
+}
+func (server *Server) Access(c *gin.Context) {
+	apiUrl := "https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/oauth2/token"
+	data := url.Values{}
+	data.Set("grant_type", "client_credentials")
+	data.Add("scope", "ROLE_APPLICATION")
+
+	u, _ := url.ParseRequestURI(apiUrl)
+	u.RawQuery = data.Encode()
+	urlStr := fmt.Sprintf("%v", u)
+
+	client := &http.Client{}
+	r, _ := http.NewRequest("POST", urlStr, nil)
+	r.Header.Add("Authorization", "Basic MVAwVGhaUGZ4TDpnS09BRnVYVlNqT3pVbnpqVGVNZQ==")
+	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
+
+	resp, _ := client.Do(r)
+	// fmt.Println(resp.Status)
+
+	if resp.StatusCode == http.StatusOK {
+		respBody, err := ioutil.ReadAll(resp.Body)
+		jsonMap := make(map[string]interface{})
+		err = json.Unmarshal(respBody, &jsonMap)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(jsonMap["access_token"])
+	}
+}
 func (server *Server) CreateUsahaku(c *gin.Context) {
+	var acc99 string
+	apiUrl := "https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/oauth2/token"
+	data1 := url.Values{}
+	data1.Set("grant_type", "client_credentials")
+	data1.Add("scope", "ROLE_APPLICATION")
+
+	u, _ := url.ParseRequestURI(apiUrl)
+	u.RawQuery = data1.Encode()
+	urlStr := fmt.Sprintf("%v", u)
+
+	client := &http.Client{}
+	r, _ := http.NewRequest("POST", urlStr, nil)
+	r.Header.Add("Authorization", "Basic MVAwVGhaUGZ4TDpnS09BRnVYVlNqT3pVbnpqVGVNZQ==")
+	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Add("Content-Length", strconv.Itoa(len(data1.Encode())))
+
+	resp, _ := client.Do(r)
+	// fmt.Println(resp.Status)
+
+	if resp.StatusCode == http.StatusOK {
+		respBody, err := ioutil.ReadAll(resp.Body)
+		jsonMap := make(map[string]interface{})
+		err = json.Unmarshal(respBody, &jsonMap)
+		if err != nil {
+			panic(err)
+		}
+		acc99 = jsonMap["access_token"].(string)
+	}
 	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
 	tokenString := strings.Split(tokenBearer, " ")[1]
-
 	token, err := extractToken(tokenString, "artaka")
 	if err != nil {
-		fmt.Println("error : ", err)
 		c.JSON(http.StatusUnprocessableEntity, gin.H{
 			"success":   "false",
 			"errorCode": "INVALID_RESPONSE",
@@ -186,29 +268,29 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
 		id := fmt.Sprintf("%0.f", claims["id"])
-		fmt.Println("id from token : ", id)
 
-		val := client.Get(id)
-		if val == nil {
-			c.JSON(http.StatusUnprocessableEntity, gin.H{
-				"success":   "false",
-				"errorCode": "INVALID_RESPONSE",
-				"message":   "The account could not be found.",
-			})
-			return
+		val, err := client.Get(id) // cannot initialize 1 variables with 2 values
+		if err != nil {
+			fmt.Println("error")
+		}
+		if val != nil {
+			fmt.Println("error")
 		}
 	}
+
 	db := server.DB
 	eventURL := c.Query("eventURL")
-	resp, err := http.Get(eventURL)
-	if resp.StatusCode != 200 {
+	r1, err := http.NewRequest("GET", eventURL, nil)
+	r1.Header.Add("Authorization", "Bearer "+acc99)
+	resp1, _ := client.Do(r1)
+	if resp1.StatusCode != 200 {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
 
 	event := models.Event{}
-	data, _ := ioutil.ReadAll(resp.Body)
-	_ = json.Unmarshal(data, &event)
+	respBody, _ := ioutil.ReadAll(resp1.Body)
+	_ = json.Unmarshal(respBody, &event) // cannot use data (variable of type url.Values) as []byte value in argument to json.Unmarshal
 	formerSubscriber := models.Subscribers{}
 	err = db.Debug().Model(models.Subscribers{}).Where("email = ?", event.Creator.Email).Take(&formerSubscriber).Error
 	if err == nil {
