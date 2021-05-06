@@ -240,7 +240,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	}
 
 	db := server.DB
-	eventURL := c.Query("eventURL")
+	eventURL := c.Query("eventUrl")
 	r1, err := http.NewRequest("GET", eventURL, nil)
 	r1.Header.Add("Authorization", "Bearer "+acc99)
 	resp1, _ := client.Do(r1)
@@ -258,7 +258,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"success":   "false",
 			"errorCode": "USER_ALREADY_EXISTS",
-			"message":   event.Creator.Address.FullName + "USER_ALREADY_EXISTS IN ARTAKA",
+			"message":   event.Creator.Address.FullName + " USER_ALREADY_EXISTS IN ARTAKA",
 		})
 		return
 	}
