@@ -147,43 +147,6 @@ func (server *Server) GetToken(c *gin.Context) {
 	}
 }
 
-const USERNAME1 = "1P0TPfxL"
-const PASSWORD1 = "gKOAFuXjOzUnzjTeMe"
-
-func (server *Server) Examp(c *gin.Context) {
-	grant := c.PostForm("grant_type")
-	scope := c.PostForm("scope")
-	username, password, ok := c.Request.BasicAuth()
-	isValid := (username == USERNAME1) && (password == PASSWORD1)
-	if !ok {
-		c.JSON(http.StatusCreated, gin.H{
-			"success":   "False",
-			"errorCode": "ACCOUNT_NOT_FOUND",
-		})
-	} else if !isValid {
-		c.JSON(http.StatusCreated, gin.H{
-			"success":   "False",
-			"errorCode": "NOT_FOUND",
-		})
-	}
-	if grant != "client_credentials" {
-		restErr := errors.RestErr{
-			Message: "Please Check Client Credentials",
-			Status:  "Failed",
-			Error:   "True",
-		}
-		c.JSON(http.StatusOK, restErr)
-		return
-	} else if scope != "ROLE_APPLICATION" {
-		restErr := errors.RestErr{
-			Message: "Please Check Scope",
-			Status:  "Failed",
-			Error:   "True",
-		}
-		c.JSON(http.StatusOK, restErr)
-		return
-	}
-}
 func dumpMap(space string, m map[string]interface{}) {
 	for k, v := range m {
 		if mv, ok := v.(map[string]interface{}); ok {
@@ -242,8 +205,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	r.Header.Add("Content-Length", strconv.Itoa(len(data1.Encode())))
 
 	resp, _ := client.Do(r)
-	// fmt.Println(resp.Status)
-
 	if resp.StatusCode == http.StatusOK {
 		respBody, err := ioutil.ReadAll(resp.Body)
 		jsonMap := make(map[string]interface{})
