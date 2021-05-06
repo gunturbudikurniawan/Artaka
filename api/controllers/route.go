@@ -47,7 +47,7 @@ func (s *Server) initialRoutes() {
 	usahaku99 := s.Router.Group("/oauth2")
 	{
 		usahaku99.POST("/token", s.GetToken)
-		usahaku99.POST("/url", s.Access)
+		// usahaku99.POST("/url", s.Access)
 
 	}
 	v2 := s.Router.Group("/api/merchant")
