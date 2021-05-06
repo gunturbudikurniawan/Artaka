@@ -32,8 +32,8 @@ var client *redis.Client
 func init() {
 	dsn := os.Getenv("REDIS_DSN")
 	if len(dsn) == 0 {
-		dsn = "127.0.0.1:6379"
-		// dsn = "my-cluster-usahaku.uh8ptm.0001.apse1.cache.amazonaws.com:6379"
+		// dsn = "127.0.0.1:6379"
+		dsn = "my-cluster-usahaku.uh8ptm.0001.apse1.cache.amazonaws.com:6379"
 	}
 	client = redis.NewClient(&redis.Options{
 		Addr: dsn,
