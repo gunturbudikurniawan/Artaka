@@ -278,7 +278,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	} else {
 		phone = "+" + event.Creator.Address.Phone
 	}
-
+	t := time.Now()
 	hasil := db.Create(&models.Subscribers{Create_dtm: time.Now(),
 		User_id:          phone,
 		Email:            event.Creator.Email,
@@ -291,7 +291,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		Bank_name:        "",
 		Bank_account:     "",
 		Idcard_image:     json.RawMessage(`["https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"]`),
-		Referral_code:    ""})
+		Referral_code:    event.Creator.Address.Phone + t.Format("01022006")})
 
 	tokenInfo, err := CreateToken(hasil.Value.(*models.Subscribers).ID)
 	if err != nil {
@@ -306,7 +306,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 
 	result := map[string]string{
 		"success":           "true",
-		"accountIdentifier": phone,
+		"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
 	}
 	c.JSON(http.StatusOK, result)
 	if tokenInfo.AccessToken != "" {
@@ -913,6 +913,30 @@ func (server *Server) GetCertainSubscribers(c *gin.Context) {
 		"error":    "null",
 	})
 }
+
+func (server *Server) GetbyRef(c *gin.Context) {
+
+	errList = map[string]string{}
+
+	referral_code := c.Param("referral_code")
+	fmt.Println(">>>>>>>>", referral_code)
+	merchant := models.Subscribers{}
+
+	merchantGotten, err := merchant.FindReferral(server.DB, referral_code)
+	if err != nil {
+		errList["No_user"] = "No User Found"
+		c.JSON(http.StatusNotFound, gin.H{
+			"status": http.StatusNotFound,
+			"error":  errList,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status":   http.StatusOK,
+		"response": merchantGotten,
+	})
+}
+
 func (server *Server) GetMerchant1(c *gin.Context) {
 
 	errList = map[string]string{}

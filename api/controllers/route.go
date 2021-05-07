@@ -47,7 +47,6 @@ func (s *Server) initialRoutes() {
 	usahaku99 := s.Router.Group("/oauth2")
 	{
 		usahaku99.POST("/token", s.GetToken)
-		// usahaku99.POST("/url", s.Access)
 
 	}
 	v2 := s.Router.Group("/api/merchant")
@@ -56,6 +55,7 @@ func (s *Server) initialRoutes() {
 		v2.GET("/regis", s.CreateUsahaku)
 		v2.POST("/update", s.UpdatePassword)
 		v2.GET("/:user_id", s.GetMerchant1)
+		v2.GET("/get/:referral_code", s.GetbyRef)
 
 		v2.POST("/register", s.CreateMerchants)
 		v2.POST("/login", s.LoginMerchant)

@@ -310,7 +310,18 @@ func (m *Subscribers) FindMerchant(db *gorm.DB, user_id string) (*Subscribers, e
 	}
 	return m, err
 }
+func (m *Subscribers) FindReferral(db *gorm.DB, referral_code string) (*Subscribers, error) {
+	var err error
 
+	err = db.Debug().Model(Subscribers{}).Where("referral_code >?", referral_code).Take(&m).Error
+	if err != nil {
+		return &Subscribers{}, err
+	}
+	if gorm.IsRecordNotFoundError(err) {
+		return &Subscribers{}, errors.New("User Not Found")
+	}
+	return m, err
+}
 func (m *Subscribers) SaveUser(db *gorm.DB) (*Subscribers, error) {
 
 	var err error
