@@ -82,7 +82,7 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 	)
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":   "Success",
+		"status":   "success",
 		"response": "",
 	})
 
@@ -248,7 +248,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
-
 	event := models.Event{}
 	respBody, _ := ioutil.ReadAll(resp1.Body)
 	_ = json.Unmarshal(respBody, &event) // cannot use data (variable of type url.Values) as []byte value in argument to json.Unmarshal
@@ -306,7 +305,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	}
 
 	result := map[string]string{
-		"Success":           "true",
+		"success":           "true",
 		"accountIdentifier": phone,
 	}
 	c.JSON(http.StatusOK, result)
@@ -909,7 +908,7 @@ func (server *Server) GetCertainSubscribers(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":   "Success",
+		"status":   "success",
 		"response": datas,
 		"error":    "null",
 	})
