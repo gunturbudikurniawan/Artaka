@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -44,6 +45,13 @@ func init() {
 	}
 }
 
+type Subscribers1 struct {
+	User_id         string `json:"user_id"`
+	Email           string `json:"email"`
+	Owner_name      string `json:"owner_name"`
+	Secret_password string `json:"secret_password"`
+}
+
 func (server *Server) UpdatePassword(c *gin.Context) {
 	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
 	tokenString := strings.Split(tokenBearer, " ")[1]
@@ -64,6 +72,10 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Password Encryption  failed"})
 		return
 	}
+	id_user := fmt.Sprintf("%s", claims["user_id"])
+	emailuser := fmt.Sprintf("%s", claims["email"])
+	owneruser := fmt.Sprintf("%s", claims["owner_name"])
+
 	formerMerchant := models.Subscribers{}
 	err = server.DB.Debug().Model(models.Subscribers{}).Where("id = ?", claims["id"]).Take(&formerMerchant).Error
 	if err != nil {
@@ -75,6 +87,7 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 	}
 
 	input.Secret_password = string(pass)
+
 	server.DB.Debug().Model(&models.Subscribers{}).Where("id = ?", claims["id"]).Take(&models.Subscribers{}).UpdateColumns(
 		map[string]interface{}{
 			"secret_password": input.Secret_password,
@@ -83,9 +96,37 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":   "success",
-		"response": "",
+		"response": "Berhasill",
 	})
+	if err == nil {
 
+		in := Subscribers1{
+			User_id:         id_user,
+			Email:           emailuser,
+			Owner_name:      owneruser,
+			Secret_password: input.Secret_password,
+		}
+		b, err := json.Marshal(in)
+		if err != nil {
+			fmt.Printf("Error: %s", err)
+			return
+		}
+		var jsonstr = []byte(b)
+		req, err := http.NewRequest("POST", "https://artaka-api.com/api/subscriber/add", bytes.NewBuffer(jsonstr))
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			panic(err)
+		}
+		defer resp.Body.Close()
+
+		fmt.Println("response Status:", resp.Status)
+		fmt.Println("response Headers:", resp.Header)
+		body, _ := ioutil.ReadAll(resp.Body)
+		fmt.Println("response Body:", string(body))
+	}
 }
 
 const USERNAME = "integrateartaka"
@@ -123,7 +164,7 @@ func (server *Server) GetToken(c *gin.Context) {
 		c.JSON(http.StatusOK, restErr)
 		return
 	} else {
-		tokenInfo, err := CreateToken(rand.Uint32())
+		tokenInfo, err := CreateToken(rand.Uint32(), "gunturkurniawan238@gmail.com", "guntur", "+6281290858472")
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -187,6 +228,32 @@ func (server *Server) Access(c *gin.Context) {
 		fmt.Println(jsonMap["access_token"])
 	}
 }
+
+type Outlets struct {
+	UserID              string `json:"user_id"`
+	Nama                string `json:"nama"`
+	Phone               string `json:"phone"`
+	BusinessCategory    string `json:"business_category"`
+	Address             string `json:"address"`
+	IsActive            string `json:"is_active"`
+	Accounts            Accounts
+	FcmToken            string   `json:"fcm_token"`
+	Images              []string `json:"images"`
+	MiniWebsiteUrl      string   `json:"mini_website_url"`
+	IsOnlineStoreActive string   `json:"is_online_store_active"`
+}
+type Accounts struct {
+	KasBank             int    `json:"kas_bank"`
+	Aset                int    `json:"aset"`
+	Piutang             int    `json:"piutang"`
+	Hutang              int    `json:"hutang"`
+	AccountingStartDate string `json:"accounting_start_date"`
+}
+type Payment struct {
+	UserID         string `json:"user_id"`
+	Payment_status string `json:"payment_status"`
+}
+
 func (server *Server) CreateUsahaku(c *gin.Context) {
 	var acc99 string
 	apiUrl := "https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/oauth2/token"
@@ -230,7 +297,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	if ok && token.Valid {
 		id := fmt.Sprintf("%0.f", claims["id"])
 
-		val, err := client.Get(id) // cannot initialize 1 variables with 2 values
+		val, err := client.Get(id)
 		if err != nil {
 			fmt.Println("error")
 		}
@@ -250,83 +317,295 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	}
 	event := models.Event{}
 	respBody, _ := ioutil.ReadAll(resp1.Body)
-	_ = json.Unmarshal(respBody, &event) // cannot use data (variable of type url.Values) as []byte value in argument to json.Unmarshal
+	_ = json.Unmarshal(respBody, &event)
 	formerSubscriber := models.Subscribers{}
-	err = db.Debug().Model(models.Subscribers{}).Where("email = ?", event.Creator.Email).Take(&formerSubscriber).Error
-	if err == nil {
-		c.JSON(http.StatusOK, gin.H{
-			"success":   "false",
-			"errorCode": "USER_ALREADY_EXISTS",
-			"message":   event.Creator.Address.FullName + " USER_ALREADY_EXISTS IN ARTAKA",
-		})
-		return
-	}
+	if event.Type == "SUBSCRIPTION_ORDER" {
 
-	if event.Creator.Address.Phone == "" && event.Creator.Email == "" && event.Creator.Address.FullName == "" {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"success":   "false",
-			"errorCode": "INVALID_RESPONSE",
-			"message":   "The account " + event.Payload.Company.Name + " could not be found.",
-		})
-		return
-	}
-	x := event.Creator.Address.Phone
-	i := strings.Index(x, "+")
-	var phone string
-	if i > -1 {
-		phone = event.Creator.Address.Phone
-	} else {
-		phone = "+" + event.Creator.Address.Phone
-	}
-	t := time.Now()
-	hasil := db.Create(&models.Subscribers{Create_dtm: time.Now(),
-		User_id:          phone,
-		Email:            event.Creator.Email,
-		Owner_name:       event.Creator.Address.FullName,
-		Secret_password:  "",
-		Fcm_token:        "",
-		Idcard_name:      "",
-		Idcard_number:    "",
-		Bank_holder_name: "",
-		Bank_name:        "",
-		Bank_account:     "",
-		Idcard_image:     json.RawMessage(`["https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"]`),
-		Referral_code:    event.Creator.Address.Phone + t.Format("01022006")})
-
-	tokenInfo, err := CreateToken(hasil.Value.(*models.Subscribers).ID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	err = CreateAuth(hasil.Value.(*models.Subscribers).Owner_name, tokenInfo)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	result := map[string]string{
-		"success":           "true",
-		"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
-	}
-	c.JSON(http.StatusOK, result)
-	if tokenInfo.AccessToken != "" {
-		from := "artakajurnal@gmail.com"
-		password := "Amazon123@"
-		to := []string{
-			event.Creator.Email,
-			"gunturkurniawan238@gmail.com",
-		}
-		smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
-		message := []byte("To: Merchant Artaka \r\n" +
-			"Subject: Hallo Artaka!\r\n" +
-			"\r\n" +
-			"This is for update password.\r\n" + "https://master.d3mr68pgup3qa4.amplifyapp.com/reset/" + tokenInfo.AccessToken)
-		auth := smtp.PlainAuth("", from, password, smtpServer.host)
-		err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
-		if err != nil {
+		err = db.Debug().Model(models.Subscribers{}).Where("email = ?", event.Creator.Email).Take(&formerSubscriber).Error
+		if err == nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success":   "false",
+				"errorCode": "USER_ALREADY_EXISTS",
+				"message":   event.Creator.Address.FullName + " USER_ALREADY_EXISTS IN ARTAKA",
+			})
 			return
 		}
-		fmt.Println("Email Sent!")
+
+		if event.Creator.Address.Phone == "" && event.Creator.Email == "" && event.Creator.Address.FullName == "" {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{
+				"success":   "false",
+				"errorCode": "INVALID_RESPONSE",
+				"message":   "The account " + event.Payload.Company.Name + " could not be found.",
+			})
+			return
+		}
+		phone := event.Creator.Address.Phone
+		if phone[:1] == "0" {
+			phone = "+62" + phone[1:]
+		} else if phone[:1] == "6" {
+			phone = "+62" + phone[2:]
+		}
+		t := time.Now()
+		hasil := db.Create(&models.Subscribers{Create_dtm: time.Now(),
+			User_id:          phone,
+			Email:            event.Creator.Email,
+			Owner_name:       event.Creator.Address.FullName,
+			Secret_password:  "",
+			Fcm_token:        "",
+			Idcard_name:      "",
+			Idcard_number:    "",
+			Bank_holder_name: "",
+			Bank_name:        "",
+			Bank_account:     "",
+			Idcard_image:     json.RawMessage(`["https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"]`),
+			Referral_code:    event.Creator.Address.Phone + t.Format("01022006")})
+
+		tokenInfo, err := CreateToken(hasil.Value.(*models.Subscribers).ID, event.Creator.Email, event.Creator.FirstName, phone)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		err = CreateAuth(hasil.Value.(*models.Subscribers).Owner_name, tokenInfo)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		result := map[string]string{
+			"success":           "true",
+			"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
+		}
+		c.JSON(http.StatusOK, result)
+		if err == nil {
+			acc := Accounts{
+				KasBank:             0,
+				Aset:                0,
+				Piutang:             0,
+				Hutang:              0,
+				AccountingStartDate: "Account Start Date",
+			}
+			out := Outlets{
+				UserID:              phone,
+				Accounts:            acc,
+				Nama:                event.Creator.FirstName,
+				Phone:               phone,
+				BusinessCategory:    "Cafe",
+				Address:             event.Creator.Address.City + " " + event.Creator.Address.State + " " + event.Creator.Address.Street1,
+				IsActive:            "Yes",
+				FcmToken:            "",
+				Images:              []string{"https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"},
+				MiniWebsiteUrl:      "https://www.generationsforpeace.org",
+				IsOnlineStoreActive: "No",
+			}
+			b, err := json.Marshal(out)
+			if err != nil {
+				fmt.Printf("Error: %s", err)
+				return
+			}
+			var jsonstr = []byte(b)
+			req, err := http.NewRequest("POST", "https://artaka-api.com/api/outlet/add", bytes.NewBuffer(jsonstr))
+			req.Header.Set("Content-Type", "application/json")
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				panic(err)
+			}
+			defer resp.Body.Close()
+
+			fmt.Println("response Status:", resp.Status)
+			fmt.Println("response Headers:", resp.Header)
+			body, _ := ioutil.ReadAll(resp.Body)
+			fmt.Println("response Body:", string(body))
+		}
+		if tokenInfo.AccessToken != "" {
+			from := "artakajurnal@gmail.com"
+			password := "Amazon123@"
+			to := []string{
+				event.Creator.Email,
+				"gunturkurniawan238@gmail.com",
+			}
+			smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
+			message := []byte("To: Merchant Artaka \r\n" +
+				"Subject: Hallo Artaka!\r\n" +
+				"\r\n" +
+				"This is for update password.\r\n" + "https://master.d3mr68pgup3qa4.amplifyapp.com/reset/" + tokenInfo.AccessToken)
+			auth := smtp.PlainAuth("", from, password, smtpServer.host)
+			err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
+			if err != nil {
+				return
+			}
+			fmt.Println("Email Sent!")
+		}
+	} else {
+		event := models.AutoGenerated{}
+		respBody, err := ioutil.ReadAll(resp1.Body)
+		_ = json.Unmarshal(respBody, &event)
+		if event.Type == "SUBSCRIPTION_NOTICE" {
+			if event.Payload.Notice.Type == "DEACTIVATED" {
+				phone := event.Creator.Address.Phone
+				if phone[:1] == "0" {
+					phone = "+62" + phone[1:]
+				} else if phone[:1] == "6" {
+					phone = "+62" + phone[2:]
+				}
+				if err == nil {
+
+					acc := Accounts{
+						KasBank:             0,
+						Aset:                0,
+						Piutang:             0,
+						Hutang:              0,
+						AccountingStartDate: "Account Start Date",
+					}
+					out := Outlets{
+						UserID:              phone,
+						Accounts:            acc,
+						Nama:                event.Creator.FirstName,
+						Phone:               phone,
+						BusinessCategory:    "Cafe",
+						Address:             event.Creator.Address.City + " " + event.Creator.Address.State + " " + event.Creator.Address.Street1,
+						IsActive:            "No",
+						FcmToken:            "",
+						Images:              []string{"https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"},
+						MiniWebsiteUrl:      "https://www.generationsforpeace.org",
+						IsOnlineStoreActive: "No",
+					}
+					b, err := json.Marshal(out)
+					if err != nil {
+						fmt.Printf("Error: %s", err)
+						return
+					}
+					var jsonstr = []byte(b)
+					req, err := http.NewRequest("POST", "https://artaka-api.com/api/outlet/add", bytes.NewBuffer(jsonstr))
+					req.Header.Set("Content-Type", "application/json")
+
+					client := &http.Client{}
+					resp, err := client.Do(req)
+					if err != nil {
+						panic(err)
+					} else if err == nil {
+						from := "artakajurnal@gmail.com"
+						password := "Amazon123@"
+						to := []string{
+							event.Creator.Email,
+							"gunturkurniawan238@gmail.com",
+						}
+						smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
+						message := []byte("To: Merchant Artaka \r\n" +
+							"Subject: Hallo Artaka!\r\n" +
+							"\r\n" +
+							"SUSPENDED or FREE_TRIAL_EXPIRED")
+						auth := smtp.PlainAuth("", from, password, smtpServer.host)
+						err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
+						if err != nil {
+							return
+						}
+						fmt.Println("Email Sent!")
+					}
+					defer resp.Body.Close()
+				}
+
+				t := time.Now()
+				result := map[string]string{
+					"success":           "true",
+					"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
+				}
+				c.JSON(http.StatusOK, result)
+			} else if event.Payload.Notice.Type == "REACTIVATED" {
+				phone := event.Creator.Address.Phone
+				if phone[:1] == "0" {
+					phone = "+62" + phone[1:]
+				} else if phone[:1] == "6" {
+					phone = "+62" + phone[2:]
+				}
+				t := time.Now()
+				result := map[string]string{
+					"success":           "true",
+					"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
+				}
+				c.JSON(http.StatusOK, result)
+				from := "artakajurnal@gmail.com"
+				password := "Amazon123@"
+				to := []string{
+					event.Creator.Email,
+					"gunturkurniawan238@gmail.com",
+				}
+				smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
+				message := []byte("To: Merchant Artaka \r\n" +
+					"Subject: Hallo Artaka!\r\n" +
+					"\r\n" +
+					"ACTIVE or FREE_TRIAL")
+				auth := smtp.PlainAuth("", from, password, smtpServer.host)
+				err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
+				if err != nil {
+					return
+				}
+				fmt.Println("Email Sent!")
+
+			} else if event.Payload.Notice.Type == "CLOSED" {
+				phone := event.Creator.Address.Phone
+				if phone[:1] == "0" {
+					phone = "+62" + phone[1:]
+				} else if phone[:1] == "6" {
+					phone = "+62" + phone[2:]
+				}
+				t := time.Now()
+				result := map[string]string{
+					"success":           "true",
+					"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
+				}
+				c.JSON(http.StatusOK, result)
+				from := "artakajurnal@gmail.com"
+				password := "Amazon123@"
+				to := []string{
+					event.Creator.Email,
+					"gunturkurniawan238@gmail.com",
+				}
+				smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
+				message := []byte("To: Merchant Artaka \r\n" +
+					"Subject: Hallo Artaka!\r\n" +
+					"\r\n" +
+					"UPCOMING_INVOICE")
+				auth := smtp.PlainAuth("", from, password, smtpServer.host)
+				err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
+				if err != nil {
+					return
+				}
+				fmt.Println("Email Sent!")
+			}
+		} else if event.Type == "SUBSCRIPTION_CANCEL" {
+			phone := event.Creator.Address.Phone
+			if phone[:1] == "0" {
+				phone = "+62" + phone[1:]
+			} else if phone[:1] == "6" {
+				phone = "+62" + phone[2:]
+			}
+			t := time.Now()
+			result := map[string]string{
+				"success":           "true",
+				"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
+			}
+			c.JSON(http.StatusOK, result)
+			from := "artakajurnal@gmail.com"
+			password := "Amazon123@"
+			to := []string{
+				event.Creator.Email,
+				"gunturkurniawan238@gmail.com",
+			}
+			smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
+			message := []byte("To: Merchant Artaka \r\n" +
+				"Subject: Hallo Artaka!\r\n" +
+				"\r\n" +
+				"customer cancels an existing subscription")
+			auth := smtp.PlainAuth("", from, password, smtpServer.host)
+			err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
+			if err != nil {
+				return
+			}
+			fmt.Println("Email Sent!")
+		}
+
 	}
 }
 
@@ -356,7 +635,7 @@ func extractToken(jwtToken, secret string) (*jwt.Token, error) {
 	return token, nil
 }
 
-func CreateToken(id uint32) (*models.TokenDetails, error) {
+func CreateToken(id uint32, email string, owner_name string, user_id string) (*models.TokenDetails, error) {
 	tokenInfo := &models.TokenDetails{}
 	tokenInfo.AccessTokenExpires = time.Now().Add(time.Minute * 15).Unix()
 
@@ -368,6 +647,10 @@ func CreateToken(id uint32) (*models.TokenDetails, error) {
 	atClaims["authorized"] = true
 
 	atClaims["id"] = id
+	atClaims["email"] = email
+	atClaims["owner_name"] = owner_name
+	atClaims["user_id"] = user_id
+
 	atClaims["exp"] = tokenInfo.AccessTokenExpires
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	tokenInfo.AccessToken, err = at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
