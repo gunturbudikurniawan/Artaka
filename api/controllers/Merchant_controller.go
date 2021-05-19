@@ -46,10 +46,18 @@ func init() {
 }
 
 type Subscribers1 struct {
-	User_id         string `json:"user_id"`
-	Email           string `json:"email"`
-	Owner_name      string `json:"owner_name"`
-	Secret_password string `json:"secret_password"`
+	User_id          string   `json:"user_id"`
+	Email            string   `json:"email"`
+	Owner_name       string   `json:"owner_name"`
+	Secret_password  string   `json:"secret_password"`
+	Fcm_token        string   `json:"fcm_token"`
+	Idcard_name      string   `json:"Idcard_name"`
+	Idcard_number    string   `json:"Idcard_number"`
+	Bank_holder_name string   `json:"bank_holder_name"`
+	Bank_name        string   `json:"bank_name"`
+	Bank_account     string   `json:"Bank_account"`
+	Idcard_image     []string `json:"idcard_image"`
+	Referral_code    string   `json:"referral_code"`
 }
 
 func (server *Server) UpdatePassword(c *gin.Context) {
@@ -93,40 +101,45 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 			"secret_password": input.Secret_password,
 		},
 	)
+	in := Subscribers1{
+		User_id:          id_user,
+		Email:            emailuser,
+		Owner_name:       owneruser,
+		Secret_password:  "",
+		Fcm_token:        "",
+		Idcard_name:      "",
+		Idcard_number:    "",
+		Bank_holder_name: "",
+		Bank_name:        "",
+		Bank_account:     "",
+		Idcard_image:     []string{"https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"},
+		Referral_code:    "99usahaku",
+	}
+	b, err := json.Marshal(in)
+	if err != nil {
+		fmt.Printf("Error: %s", err)
+		return
+	}
+	var jsonstr = []byte(b)
+	req, err := http.NewRequest("POST", "https://artaka-api.com/api/subscriber/add", bytes.NewBuffer(jsonstr))
+	req.Header.Set("Content-Type", "application/json")
 
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("response Status:", resp.Status)
+	fmt.Println("response Headers:", resp.Header)
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
 	c.JSON(http.StatusOK, gin.H{
 		"status":   "success",
 		"response": "Berhasill",
 	})
-	if err == nil {
 
-		in := Subscribers1{
-			User_id:         id_user,
-			Email:           emailuser,
-			Owner_name:      owneruser,
-			Secret_password: input.Secret_password,
-		}
-		b, err := json.Marshal(in)
-		if err != nil {
-			fmt.Printf("Error: %s", err)
-			return
-		}
-		var jsonstr = []byte(b)
-		req, err := http.NewRequest("POST", "https://artaka-api.com/api/subscriber/add", bytes.NewBuffer(jsonstr))
-		req.Header.Set("Content-Type", "application/json")
-
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			panic(err)
-		}
-		defer resp.Body.Close()
-
-		fmt.Println("response Status:", resp.Status)
-		fmt.Println("response Headers:", resp.Header)
-		body, _ := ioutil.ReadAll(resp.Body)
-		fmt.Println("response Body:", string(body))
-	}
 }
 
 const USERNAME = "integrateartaka"
@@ -253,6 +266,24 @@ type Payment struct {
 	UserID         string `json:"user_id"`
 	Payment_status string `json:"payment_status"`
 }
+type Outlets1 struct {
+	User_id                string `json:"user_id"`
+	Message                string `json:"nama"`
+	Outlet_id              string `json:"outlet_id"`
+	Alamat                 string `json:"alamat"`
+	Kota                   string `json:"kota"`
+	Provinsi               string `json:"provinsi"`
+	Outlet_phone           string `json:"outlet_phone"`
+	Employee_id            string `json:"employee_id"`
+	Employee_name          string `json:"employee_name"`
+	Clockin                time.Time
+	Position               string   `json:"position"`
+	Business_category      string   `json:"business_category"`
+	Fcm_token              string   `json:"fcm_token"`
+	Mini_website_url       string   `json:"mini_website_url"`
+	Is_online_store_active string   `json:"is_online_store_active"`
+	Images                 []string `json:"images"`
+}
 
 func (server *Server) CreateUsahaku(c *gin.Context) {
 	var acc99 string
@@ -370,54 +401,53 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-
-		result := map[string]string{
-			"success":           "true",
-			"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
+		acc := Accounts{
+			KasBank:             0,
+			Aset:                0,
+			Piutang:             0,
+			Hutang:              0,
+			AccountingStartDate: "Account Start Date",
 		}
-		c.JSON(http.StatusOK, result)
-		if err == nil {
-			acc := Accounts{
-				KasBank:             0,
-				Aset:                0,
-				Piutang:             0,
-				Hutang:              0,
-				AccountingStartDate: "Account Start Date",
-			}
-			out := Outlets{
-				UserID:              phone,
-				Accounts:            acc,
-				Nama:                event.Creator.FirstName,
-				Phone:               phone,
-				BusinessCategory:    "Cafe",
-				Address:             event.Creator.Address.City + " " + event.Creator.Address.State + " " + event.Creator.Address.Street1,
-				IsActive:            "Yes",
-				FcmToken:            "",
-				Images:              []string{"https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"},
-				MiniWebsiteUrl:      "https://www.generationsforpeace.org",
-				IsOnlineStoreActive: "No",
-			}
-			b, err := json.Marshal(out)
-			if err != nil {
-				fmt.Printf("Error: %s", err)
-				return
-			}
-			var jsonstr = []byte(b)
-			req, err := http.NewRequest("POST", "https://artaka-api.com/api/outlet/add", bytes.NewBuffer(jsonstr))
-			req.Header.Set("Content-Type", "application/json")
-
-			client := &http.Client{}
-			resp, err := client.Do(req)
-			if err != nil {
-				panic(err)
-			}
-			defer resp.Body.Close()
-
-			fmt.Println("response Status:", resp.Status)
-			fmt.Println("response Headers:", resp.Header)
-			body, _ := ioutil.ReadAll(resp.Body)
-			fmt.Println("response Body:", string(body))
+		out := Outlets{
+			UserID:              phone,
+			Accounts:            acc,
+			Nama:                event.Creator.FirstName,
+			Phone:               phone,
+			BusinessCategory:    "Cafe",
+			Address:             event.Creator.Address.City + " " + event.Creator.Address.State + " " + event.Creator.Address.Street1,
+			IsActive:            "Yes",
+			FcmToken:            "",
+			Images:              []string{"https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"},
+			MiniWebsiteUrl:      "https://www.generationsforpeace.org",
+			IsOnlineStoreActive: "No",
 		}
+		b, err := json.Marshal(out)
+		if err != nil {
+			fmt.Printf("Error: %s", err)
+			return
+		}
+		var jsonstr = []byte(b)
+		req, err := http.NewRequest("POST", "https://artaka-api.com/api/outlet/add", bytes.NewBuffer(jsonstr))
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			panic(err)
+		}
+		// defer resp.Body.Close()
+
+		fmt.Println("response Status:", resp.Status)
+		fmt.Println("response Headers:", resp.Header)
+		body, _ := ioutil.ReadAll(resp.Body)
+		fmt.Println("response Body:", string(body))
+
+		// result := map[string]string{
+		// 	"success":           "true",
+		// 	"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
+		// }
+		// c.JSON(http.StatusOK, result)
+
 		if tokenInfo.AccessToken != "" {
 			from := "artakajurnal@gmail.com"
 			password := "Amazon123@"
@@ -506,12 +536,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 					defer resp.Body.Close()
 				}
 
-				t := time.Now()
-				result := map[string]string{
-					"success":           "true",
-					"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
-				}
-				c.JSON(http.StatusOK, result)
 			} else if event.Payload.Notice.Type == "REACTIVATED" {
 				phone := event.Creator.Address.Phone
 				if phone[:1] == "0" {
@@ -605,7 +629,12 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			}
 			fmt.Println("Email Sent!")
 		}
-
+		t := time.Now()
+		result := map[string]string{
+			"success":           "true",
+			"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
+		}
+		c.JSON(http.StatusOK, result)
 	}
 }
 
