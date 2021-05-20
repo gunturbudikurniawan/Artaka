@@ -83,7 +83,7 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 	}
 
 	formerMerchant := models.Subscribers{}
-	err = server.DB.Debug().Model(models.Subscribers{}).Where("id = ?", claims["id"]).Take(&formerMerchant).Error
+	err = server.DB.Debug().Model(models.Subscribers{}).Where("email = ?", claims["email"]).Take(&formerMerchant).Error
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"status": "Failed",
@@ -94,7 +94,7 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 
 	input.Secret_password = string(pass)
 
-	server.DB.Debug().Model(&models.Subscribers{}).Where("id = ?", claims["id"]).Take(&models.Subscribers{}).UpdateColumns(
+	server.DB.Debug().Model(&models.Subscribers{}).Where("email = ?", claims["email"]).Take(&models.Subscribers{}).UpdateColumns(
 		map[string]interface{}{
 			"secret_password": input.Secret_password,
 		},
