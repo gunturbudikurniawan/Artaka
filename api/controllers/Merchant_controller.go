@@ -76,11 +76,6 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 		return
 	}
 	password := input.Secret_password
-	pass, err := bcrypt.GenerateFromPassword([]byte(input.Secret_password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Password Encryption  failed"})
-		return
-	}
 
 	formerMerchant := models.Subscribers{}
 	err = server.DB.Debug().Model(models.Subscribers{}).Where("email = ?", claims["email"]).Take(&formerMerchant).Error
@@ -92,8 +87,6 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	input.Secret_password = string(pass)
-
 	server.DB.Debug().Model(&models.Subscribers{}).Where("email = ?", claims["email"]).Take(&models.Subscribers{}).UpdateColumns(
 		map[string]interface{}{
 			"secret_password": input.Secret_password,
@@ -102,18 +95,12 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 	id_user := fmt.Sprintf("%s", claims["user_id"])
 	emailuser := fmt.Sprintf("%s", claims["email"])
 	owneruser := fmt.Sprintf("%s", claims["owner_name"])
-	fmt.Println(">>>>>>>>>>>>>>>>", id_user)
-	fmt.Println(">>>>>>>>>>>>>>>>", emailuser)
-	fmt.Println(">>>>>>>>>>>>>>>>", owneruser)
-	fmt.Println(">>>>>>>>>>>>>>>>", string(pass))
-	fmt.Println(">>>>>>>>>>", input.Secret_password)
-	fmt.Println(">>>>>>>>>>", password)
 
 	in := Subscribers1{
-		User_id:          id_user,   // id_user := fmt.Sprintf("%s", claims["user_id"])
-		Email:            emailuser, // emailuser := fmt.Sprintf("%s", claims["email"])
-		Owner_name:       owneruser, // owneruser := fmt.Sprintf("%s", claims["owner_name"])
-		Secret_password:  password,  // input.Secret_password
+		User_id:          id_user,
+		Email:            emailuser,
+		Owner_name:       owneruser,
+		Secret_password:  password,
 		Fcm_token:        "",
 		Idcard_name:      "",
 		Idcard_number:    "",
