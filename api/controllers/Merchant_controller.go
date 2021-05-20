@@ -59,6 +59,74 @@ type Subscribers1 struct {
 	Idcard_image     []string `json:"idcard_image"`
 	Referral_code    string   `json:"referral_code"`
 }
+type Result struct {
+	User_id                string    `json:"user_id"`
+	Message                string    `json:"message"`
+	Outlet_id              string    `json:"outlet_id"`
+	Outlet_name            string    `json:"outlet_name"`
+	Outlet_address         string    `json:"outlet_address"`
+	Outlet_phone           string    `json:"outlet_phone"`
+	Employee_id            string    `json:"employee_id"`
+	Employee_name          string    `json:"employee_name"`
+	Clockin                time.Time `json:"clockin"`
+	Business_category      string    `json:"business_category"`
+	Fcm_token              string    `json:"fcm_token"`
+	Mini_website_url       string    `json:"mini_website_url"`
+	Is_online_store_active string    `json:"Is_online_store_active"`
+	Images                 []string  `json:"images"`
+}
+type Input struct {
+	Nama_outlet string `json:"nama_outlet"`
+	Alamat      string `json:"alamat"`
+	Kota        string `json:"kota"`
+	Provinsi    string `json:"provinsi"`
+	Jenis_usaha string `json:"jenis_usaha"`
+}
+
+func (server *Server) Merchant(c *gin.Context) {
+	var hasil Input
+	err := c.ShouldBind(&hasil)
+	if err != nil {
+		fmt.Print(err)
+		c.HTML(http.StatusOK, "user_new.html", hasil)
+		return
+	}
+	registerInput := Result{}
+	registerInput.Outlet_name = hasil.Nama_outlet
+	registerInput.Outlet_address = hasil.Alamat + "|" + hasil.Kota + "|" + hasil.Provinsi
+	registerInput.Business_category = hasil.Jenis_usaha
+	registerInput.User_id = "+6281290858475"
+	registerInput.Message = "Owner"
+	registerInput.Outlet_id = "OTL-16"
+	registerInput.Outlet_phone = ""
+	registerInput.Employee_id = "j-01"
+	registerInput.Employee_name = "Guntur"
+	registerInput.Clockin = time.Now()
+	registerInput.Fcm_token = "balalal"
+	registerInput.Mini_website_url = "https://orderin.id/XXXX"
+	registerInput.Is_online_store_active = "Yes"
+	registerInput.Images = []string{"https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"}
+	b, err := json.Marshal(registerInput)
+	if err != nil {
+		fmt.Printf("Error: %s", err)
+		return
+	}
+	var jsonstr = []byte(b)
+	req, err := http.NewRequest("POST", "https://artaka-api.com/api/outlet/add", bytes.NewBuffer(jsonstr))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("response Status:", resp.Status)  // 500 Internal Server Error
+	fmt.Println("response Headers:", resp.Header) // map[Access-Control-Allow-Origin:[*] Connection:[keep-alive] Content-Length:[0] Content-Type:[application/json] Date:[Thu, 20 May 2021 07:54:15 GMT] Server:[nginx/1.10.3]]
+	body, _ := ioutil.ReadAll(resp.Body)          // response Body:
+	fmt.Println("response Body:", string(body))
+}
 
 func (server *Server) UpdatePassword(c *gin.Context) {
 	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
@@ -105,7 +173,7 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 		User_id:          id_user,
 		Email:            emailuser,
 		Owner_name:       owneruser,
-		Secret_password:  "",
+		Secret_password:  input.Secret_password,
 		Fcm_token:        "",
 		Idcard_name:      "",
 		Idcard_number:    "",
