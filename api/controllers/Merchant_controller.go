@@ -124,7 +124,7 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	defer resp.Body.Close()
+	// defer resp.Body.Close()
 
 	fmt.Println("response Status:", resp.Status)
 	fmt.Println("response Headers:", resp.Header)
@@ -225,7 +225,6 @@ func (server *Server) Access(c *gin.Context) {
 	r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 
 	resp, _ := client.Do(r)
-	// fmt.Println(resp.Status)
 
 	if resp.StatusCode == http.StatusOK {
 		respBody, err := ioutil.ReadAll(resp.Body)
@@ -258,10 +257,7 @@ type Accounts struct {
 	Hutang              int    `json:"hutang"`
 	AccountingStartDate string `json:"accounting_start_date"`
 }
-type Payment struct {
-	UserID         string `json:"user_id"`
-	Payment_status string `json:"payment_status"`
-}
+
 type Outlets1 struct {
 	User_id                string `json:"user_id"`
 	Message                string `json:"nama"`
@@ -279,6 +275,10 @@ type Outlets1 struct {
 	Mini_website_url       string   `json:"mini_website_url"`
 	Is_online_store_active string   `json:"is_online_store_active"`
 	Images                 []string `json:"images"`
+}
+type Payment struct {
+	User_id        string `json:"user_id"`
+	Payment_status string `json:"payment_status"`
 }
 
 func (server *Server) CreateUsahaku(c *gin.Context) {
@@ -409,7 +409,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			Accounts:            acc,
 			Nama:                event.Creator.FirstName,
 			Phone:               phone,
-			BusinessCategory:    "Cafe",
+			BusinessCategory:    "",
 			Address:             event.Creator.Address.City + " " + event.Creator.Address.State + " " + event.Creator.Address.Street1,
 			IsActive:            "Yes",
 			FcmToken:            "",
@@ -437,12 +437,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		fmt.Println("response Headers:", resp.Header)
 		body, _ := ioutil.ReadAll(resp.Body)
 		fmt.Println("response Body:", string(body))
-
-		// result := map[string]string{
-		// 	"success":           "true",
-		// 	"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
-		// }
-		// c.JSON(http.StatusOK, result)
 
 		if tokenInfo.AccessToken != "" {
 			from := "artakajurnal@gmail.com"
@@ -481,66 +475,34 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 					phone = "+62" + phone[2:]
 				}
 				if err == nil {
-
-					acc := Accounts{
-						KasBank:             0,
-						Aset:                0,
-						Piutang:             0,
-						Hutang:              0,
-						AccountingStartDate: "Account Start Date",
+					in := Payment{
+						User_id:        "+6282210068315",
+						Payment_status: "Not Paid",
 					}
-					out := Outlets{
-						UserID:              phone,
-						Accounts:            acc,
-						Nama:                event.Creator.FirstName,
-						Phone:               phone,
-						BusinessCategory:    "Cafe",
-						Address:             event.Creator.Address.City + " " + event.Creator.Address.State + " " + event.Creator.Address.Street1,
-						IsActive:            "No",
-						FcmToken:            "",
-						Images:              []string{"https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"},
-						MiniWebsiteUrl:      "https://www.generationsforpeace.org",
-						IsOnlineStoreActive: "No",
-					}
-					b, err := json.Marshal(out)
+					b, err := json.Marshal(in)
 					if err != nil {
 						fmt.Printf("Error: %s", err)
 						return
 					}
 					var jsonstr = []byte(b)
-					req, err := http.NewRequest("POST", "https://artaka-api.com/api/outlet/add", bytes.NewBuffer(jsonstr))
+					req, err := http.NewRequest("POST", "https://artaka-api.com/api/paymentstatus99/set", bytes.NewBuffer(jsonstr))
+
 					req.Header.Set("Content-Type", "application/json")
 
 					client := &http.Client{}
 					resp, err := client.Do(req)
 					if err != nil {
 						panic(err)
-					} else if err == nil {
-						from := "artakajurnal@gmail.com"
-						password := "Amazon123@"
-						to := []string{
-							event.Creator.Email,
-							"gunturkurniawan238@gmail.com",
-						}
-						smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
-						message := []byte("To: Merchant Artaka \r\n" +
-							"Subject: Hallo Artaka!\r\n" +
-							"\r\n" +
-							"SUSPENDED or FREE_TRIAL_EXPIRED")
-						auth := smtp.PlainAuth("", from, password, smtpServer.host)
-						err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
-						if err != nil {
-							return
-						}
-						t := time.Now()
-						result := map[string]string{
-							"success":           "true",
-							"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
-						}
-						c.JSON(http.StatusOK, result)
-						fmt.Println("Email Sent!")
 					}
-					defer resp.Body.Close()
+					fmt.Println("response Status:", resp.Status)
+					fmt.Println("response Headers:", resp.Header)
+					// defer resp.Body.Close()
+					t := time.Now()
+					result := map[string]string{
+						"success":           "true",
+						"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
+					}
+					c.JSON(http.StatusOK, result)
 				}
 
 			} else if event.Payload.Notice.Type == "REACTIVATED" {
@@ -550,29 +512,34 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 				} else if phone[:1] == "6" {
 					phone = "+62" + phone[2:]
 				}
+				in := Payment{
+					User_id:        "+6282210068315",
+					Payment_status: "Paid",
+				}
+				b, err := json.Marshal(in)
+				if err != nil {
+					fmt.Printf("Error: %s", err)
+					return
+				}
+				var jsonstr = []byte(b)
+				req, err := http.NewRequest("POST", "https://artaka-api.com/api/paymentstatus99/set", bytes.NewBuffer(jsonstr))
+
+				req.Header.Set("Content-Type", "application/json")
+
+				client := &http.Client{}
+				resp, err := client.Do(req)
+				if err != nil {
+					panic(err)
+				}
+				// defer resp.Body.Close()
+				fmt.Println("response Status:", resp.Status)
+				fmt.Println("response Headers:", resp.Header)
 				t := time.Now()
 				result := map[string]string{
 					"success":           "true",
 					"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
 				}
 				c.JSON(http.StatusOK, result)
-				from := "artakajurnal@gmail.com"
-				password := "Amazon123@"
-				to := []string{
-					event.Creator.Email,
-					"gunturkurniawan238@gmail.com",
-				}
-				smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
-				message := []byte("To: Merchant Artaka \r\n" +
-					"Subject: Hallo Artaka!\r\n" +
-					"\r\n" +
-					"ACTIVE or FREE_TRIAL")
-				auth := smtp.PlainAuth("", from, password, smtpServer.host)
-				err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
-				if err != nil {
-					return
-				}
-				fmt.Println("Email Sent!")
 
 			} else if event.Payload.Notice.Type == "CLOSED" {
 				phone := event.Creator.Address.Phone
@@ -581,36 +548,36 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 				} else if phone[:1] == "6" {
 					phone = "+62" + phone[2:]
 				}
+				in := Payment{
+					User_id:        "+6282210068315",
+					Payment_status: "Not Paid",
+				}
+				b, err := json.Marshal(in)
+				if err != nil {
+					fmt.Printf("Error: %s", err)
+					return
+				}
+				var jsonstr = []byte(b)
+				req, err := http.NewRequest("POST", "https://artaka-api.com/api/paymentstatus99/set", bytes.NewBuffer(jsonstr))
+
+				req.Header.Set("Content-Type", "application/json")
+
+				client := &http.Client{}
+				resp, err := client.Do(req)
+				if err != nil {
+					panic(err)
+				}
+				// defer resp.Body.Close()
+				fmt.Println("response Status:", resp.Status)
+				fmt.Println("response Headers:", resp.Header)
 				t := time.Now()
 				result := map[string]string{
 					"success":           "true",
 					"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
 				}
 				c.JSON(http.StatusOK, result)
-				from := "artakajurnal@gmail.com"
-				password := "Amazon123@"
-				to := []string{
-					event.Creator.Email,
-					"gunturkurniawan238@gmail.com",
-				}
-				smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
-				message := []byte("To: Merchant Artaka \r\n" +
-					"Subject: Hallo Artaka!\r\n" +
-					"\r\n" +
-					"UPCOMING_INVOICE")
-				auth := smtp.PlainAuth("", from, password, smtpServer.host)
-				err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
-				if err != nil {
-					return
-				}
-				fmt.Println("Email Sent!")
 			}
-			t := time.Now()
-			result := map[string]string{
-				"success":           "true",
-				"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
-			}
-			c.JSON(http.StatusOK, result)
+
 		} else if event.Type == "SUBSCRIPTION_CANCEL" {
 			phone := event.Creator.Address.Phone
 			if phone[:1] == "0" {
@@ -618,37 +585,37 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			} else if phone[:1] == "6" {
 				phone = "+62" + phone[2:]
 			}
+			in := Payment{
+				User_id:        "+6282210068315",
+				Payment_status: "Not Paid",
+			}
+			b, err := json.Marshal(in)
+			if err != nil {
+				fmt.Printf("Error: %s", err)
+				return
+			}
+			var jsonstr = []byte(b)
+			req, err := http.NewRequest("POST", "https://artaka-api.com/api/paymentstatus99/set", bytes.NewBuffer(jsonstr))
+
+			req.Header.Set("Content-Type", "application/json")
+
+			client := &http.Client{}
+			resp, err := client.Do(req)
+			if err != nil {
+				panic(err)
+			}
+			// defer resp.Body.Close()
+			fmt.Println("response Status:", resp.Status)
+			fmt.Println("response Headers:", resp.Header)
 			t := time.Now()
 			result := map[string]string{
 				"success":           "true",
 				"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
 			}
 			c.JSON(http.StatusOK, result)
-			from := "artakajurnal@gmail.com"
-			password := "Amazon123@"
-			to := []string{
-				event.Creator.Email,
-				"gunturkurniawan238@gmail.com",
-			}
-			smtpServer := smtpServer{host: "smtp.gmail.com", port: "587"}
-			message := []byte("To: Merchant Artaka \r\n" +
-				"Subject: Hallo Artaka!\r\n" +
-				"\r\n" +
-				"customer cancels an existing subscription")
-			auth := smtp.PlainAuth("", from, password, smtpServer.host)
-			err := smtp.SendMail(smtpServer.Address(), auth, from, to, message)
-			if err != nil {
-				return
-			}
-			fmt.Println("Email Sent!")
 		}
-		t := time.Now()
-		result := map[string]string{
-			"success":           "true",
-			"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
-		}
-		c.JSON(http.StatusOK, result)
 	}
+
 }
 
 type smtpServer struct {
