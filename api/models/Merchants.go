@@ -108,9 +108,7 @@ type FormUpdatePassword struct {
 }
 type FormUpdateOutlet struct {
 	Nama_outlet       string `json:"nama_outlet"`
-	Alamat            string `json:"alamat"`
-	Kota              string `json:"kota"`
-	Provinsi          string `json:"provinsi"`
+	Address           string `json:"address"`
 	IsActive          string `json:"isActive"`
 	Business_category string `json:"business_category"`
 	Mini_website_url  string `json:"mini_website_url"`

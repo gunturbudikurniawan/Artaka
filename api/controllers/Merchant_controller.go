@@ -173,8 +173,6 @@ func (server *Server) UpdateOutlet(c *gin.Context) {
 	} else if phone[:1] == "6" {
 		phone = "+62" + phone[2:]
 	}
-	addres := Address1{input.Alamat, input.Kota, input.Provinsi}
-	alamatlengkap := fmt.Sprintf("%s", addres)
 
 	acc := Accounts{
 		KasBank:             0,
@@ -189,7 +187,7 @@ func (server *Server) UpdateOutlet(c *gin.Context) {
 		Nama:                input.Nama_outlet,
 		Phone:               phone,
 		BusinessCategory:    input.Business_category,
-		Address:             alamatlengkap,
+		Address:             input.Address,
 		IsActive:            "Yes",
 		FcmToken:            "",
 		Images:              []string{"https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"},
