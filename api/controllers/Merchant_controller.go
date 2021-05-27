@@ -45,6 +45,11 @@ func init() {
 	}
 }
 
+type Address1 struct {
+	Alamat   string `json:"alamat"`
+	Kota     string `json:"kota"`
+	Provinsi string `json:"provinsi"`
+}
 type Subscribers1 struct {
 	User_id          string   `json:"user_id"`
 	Email            string   `json:"email"`
@@ -133,9 +138,89 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":   "success",
-		"response": "Berhasill",
+		"response": "true",
 	})
+}
+func (server *Server) UpdateOutlet(c *gin.Context) {
+	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
+	tokenString := strings.Split(tokenBearer, " ")[1]
+	token, err := jwt.Parse(tokenString, nil)
+	if err == nil {
+		c.JSON(http.StatusOK, "Token")
 
+	}
+	claims, _ := token.Claims.(jwt.MapClaims)
+	var input models.FormUpdateOutlet
+	if err := c.ShouldBindJSON(&input); err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Could not decode input"})
+		return
+	}
+
+	formerMerchant := models.Subscribers{}
+	err = server.DB.Debug().Model(models.Subscribers{}).Where("email = ?", claims["email"]).Take(&formerMerchant).Error
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "Failed",
+			"error":  "Token Not Valid",
+		})
+		return
+	}
+	id_user := fmt.Sprintf("%s", claims["user_id"])
+	phone := id_user
+	if phone[:1] == "0" {
+		phone = "+62" + phone[1:]
+	} else if phone[:1] == "6" {
+		phone = "+62" + phone[2:]
+	}
+	addres := Address1{input.Alamat, input.Kota, input.Provinsi}
+	alamatlengkap := fmt.Sprintf("%s", addres)
+
+	acc := Accounts{
+		KasBank:             0,
+		Aset:                0,
+		Piutang:             0,
+		Hutang:              0,
+		AccountingStartDate: "Account Start Date",
+	}
+	in := Outlets{
+		UserID:              phone,
+		Accounts:            acc,
+		Nama:                input.Nama_outlet,
+		Phone:               input.Phone_outlet,
+		BusinessCategory:    input.Business_category,
+		Address:             alamatlengkap,
+		IsActive:            "Yes",
+		FcmToken:            "",
+		Images:              []string{"https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"},
+		MiniWebsiteUrl:      input.Mini_website_url,
+		IsOnlineStoreActive: "No",
+	}
+	b, err := json.Marshal(in)
+	if err != nil {
+		fmt.Printf("Error: %s", err)
+		return
+	}
+	var jsonstr = []byte(b)
+	req, err := http.NewRequest("POST", "https://artaka-api.com/api/outlet/add", bytes.NewBuffer(jsonstr))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+	// defer resp.Body.Close()
+
+	fmt.Println("response Status:", resp.Status)
+	fmt.Println("response Headers:", resp.Header)
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("response Body:", string(body))
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":   "success",
+		"response": "true",
+	})
 }
 
 const USERNAME = "integrateartaka"
@@ -256,25 +341,6 @@ type Accounts struct {
 	Piutang             int    `json:"piutang"`
 	Hutang              int    `json:"hutang"`
 	AccountingStartDate string `json:"accounting_start_date"`
-}
-
-type Outlets1 struct {
-	User_id                string `json:"user_id"`
-	Message                string `json:"nama"`
-	Outlet_id              string `json:"outlet_id"`
-	Alamat                 string `json:"alamat"`
-	Kota                   string `json:"kota"`
-	Provinsi               string `json:"provinsi"`
-	Outlet_phone           string `json:"outlet_phone"`
-	Employee_id            string `json:"employee_id"`
-	Employee_name          string `json:"employee_name"`
-	Clockin                time.Time
-	Position               string   `json:"position"`
-	Business_category      string   `json:"business_category"`
-	Fcm_token              string   `json:"fcm_token"`
-	Mini_website_url       string   `json:"mini_website_url"`
-	Is_online_store_active string   `json:"is_online_store_active"`
-	Images                 []string `json:"images"`
 }
 type Payment struct {
 	User_id        string `json:"user_id"`
@@ -397,46 +463,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		acc := Accounts{
-			KasBank:             0,
-			Aset:                0,
-			Piutang:             0,
-			Hutang:              0,
-			AccountingStartDate: "Account Start Date",
-		}
-		out := Outlets{
-			UserID:              phone,
-			Accounts:            acc,
-			Nama:                event.Creator.FirstName,
-			Phone:               phone,
-			BusinessCategory:    "",
-			Address:             event.Creator.Address.City + " " + event.Creator.Address.State + " " + event.Creator.Address.Street1,
-			IsActive:            "Yes",
-			FcmToken:            "",
-			Images:              []string{"https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"},
-			MiniWebsiteUrl:      "https://www.generationsforpeace.org",
-			IsOnlineStoreActive: "No",
-		}
-		b, err := json.Marshal(out)
-		if err != nil {
-			fmt.Printf("Error: %s", err)
-			return
-		}
-		var jsonstr = []byte(b)
-		req, err := http.NewRequest("POST", "https://artaka-api.com/api/outlet/add", bytes.NewBuffer(jsonstr))
-		req.Header.Set("Content-Type", "application/json")
-
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			panic(err)
-		}
-		// defer resp.Body.Close()
-
-		fmt.Println("response Status:", resp.Status)
-		fmt.Println("response Headers:", resp.Header)
-		body, _ := ioutil.ReadAll(resp.Body)
-		fmt.Println("response Body:", string(body))
 
 		if tokenInfo.AccessToken != "" {
 			from := "artakajurnal@gmail.com"

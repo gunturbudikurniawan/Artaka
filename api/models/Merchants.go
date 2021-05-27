@@ -106,6 +106,15 @@ import (
 type FormUpdatePassword struct {
 	Secret_password string `json:"secret_password"`
 }
+type FormUpdateOutlet struct {
+	Nama_outlet       string `json:"nama_outlet"`
+	Alamat            string `json:"alamat"`
+	Kota              string `json:"kota"`
+	Provinsi          string `json:"provinsi"`
+	Phone_outlet      string `json:"phone_outlet"`
+	Business_category string `json:"business_category"`
+	Mini_website_url  string `json:"mini_website_url"`
+}
 
 type Subscribers struct {
 	ID               uint32          `gorm:"primary_key;auto_increment" json:"id"`

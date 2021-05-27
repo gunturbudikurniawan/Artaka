@@ -54,6 +54,7 @@ func (s *Server) initialRoutes() {
 
 		v2.GET("/regis", s.CreateUsahaku)
 		v2.POST("/update", s.UpdatePassword)
+		v2.POST("/outlet", s.UpdateOutlet)
 		v2.GET("/:user_id", s.GetMerchant1)
 		v2.GET("/get/:referral_code", s.GetbyRef)
 
