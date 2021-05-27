@@ -187,14 +187,14 @@ func (server *Server) UpdateOutlet(c *gin.Context) {
 		UserID:              phone,
 		Accounts:            acc,
 		Nama:                input.Nama_outlet,
-		Phone:               input.Phone_outlet,
+		Phone:               phone,
 		BusinessCategory:    input.Business_category,
 		Address:             alamatlengkap,
 		IsActive:            "Yes",
 		FcmToken:            "",
 		Images:              []string{"https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"},
 		MiniWebsiteUrl:      input.Mini_website_url,
-		IsOnlineStoreActive: "No",
+		IsOnlineStoreActive: input.IsActive,
 	}
 	b, err := json.Marshal(in)
 	if err != nil {

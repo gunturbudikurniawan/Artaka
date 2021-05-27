@@ -111,7 +111,7 @@ type FormUpdateOutlet struct {
 	Alamat            string `json:"alamat"`
 	Kota              string `json:"kota"`
 	Provinsi          string `json:"provinsi"`
-	Phone_outlet      string `json:"phone_outlet"`
+	IsActive          string `json:"isActive"`
 	Business_category string `json:"business_category"`
 	Mini_website_url  string `json:"mini_website_url"`
 }
