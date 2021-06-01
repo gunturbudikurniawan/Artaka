@@ -291,34 +291,6 @@ func dumpMap(space string, m map[string]interface{}) {
 		}
 	}
 }
-func (server *Server) Access(c *gin.Context) {
-	apiUrl := "https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/oauth2/token"
-	data := url.Values{}
-	data.Set("grant_type", "client_credentials")
-	data.Add("scope", "ROLE_APPLICATION")
-
-	u, _ := url.ParseRequestURI(apiUrl)
-	u.RawQuery = data.Encode()
-	urlStr := fmt.Sprintf("%v", u)
-
-	client := &http.Client{}
-	r, _ := http.NewRequest("POST", urlStr, nil)
-	r.Header.Add("Authorization", "Basic MVAwVGhaUGZ4TDpnS09BRnVYVlNqT3pVbnpqVGVNZQ==")
-	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	r.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
-
-	resp, _ := client.Do(r)
-
-	if resp.StatusCode == http.StatusOK {
-		respBody, err := ioutil.ReadAll(resp.Body)
-		jsonMap := make(map[string]interface{})
-		err = json.Unmarshal(respBody, &jsonMap)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(jsonMap["access_token"])
-	}
-}
 
 type Outlets struct {
 	UserID              string `json:"user_id"`
@@ -347,7 +319,7 @@ type Payment struct {
 
 func (server *Server) CreateUsahaku(c *gin.Context) {
 	var acc99 string
-	apiUrl := "https://api.digitalcore.telkomsel.com/preprod-web/isv_fulfilment/oauth2/token"
+	apiUrl := "https://api.digitalcore.telkomsel.com/isv_fulfilment/oauth2/token"
 	data1 := url.Values{}
 	data1.Set("grant_type", "client_credentials")
 	data1.Add("scope", "ROLE_APPLICATION")
@@ -564,7 +536,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 					"accountIdentifier": event.Creator.Address.Phone + t.Format("01022006"),
 				}
 				c.JSON(http.StatusOK, result)
-
+				fmt.Println("email senty")
 			} else if event.Payload.Notice.Type == "CLOSED" {
 				phone := event.Creator.Address.Phone
 				if phone[:1] == "0" {
