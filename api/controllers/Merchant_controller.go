@@ -45,6 +45,10 @@ func init() {
 	}
 }
 
+type Value struct {
+	Message string `json:"message"`
+	User_id string `json:"user_id"`
+}
 type Address1 struct {
 	Alamat   string `json:"alamat"`
 	Kota     string `json:"kota"`
@@ -135,11 +139,19 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 	fmt.Println("response Headers:", resp.Header)
 	body, _ := ioutil.ReadAll(resp.Body)
 	fmt.Println("response Body:", string(body))
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":   "success",
-		"response": "true",
-	})
+	value := Value{}
+	_ = json.Unmarshal(body, &value)
+	if value.Message == "outlet already exists" {
+		c.JSON(http.StatusOK, gin.H{
+			"status":   "failed",
+			"response": "subscribers already exist",
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"status":   "success",
+			"response": "subscribers Created",
+		})
+	}
 }
 func (server *Server) UpdateOutlet(c *gin.Context) {
 	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
@@ -214,11 +226,19 @@ func (server *Server) UpdateOutlet(c *gin.Context) {
 	fmt.Println("response Headers:", resp.Header)
 	body, _ := ioutil.ReadAll(resp.Body)
 	fmt.Println("response Body:", string(body))
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":   "success",
-		"response": "true",
-	})
+	value := Value{}
+	_ = json.Unmarshal(body, &value)
+	if value.Message == "outlet already exists" {
+		c.JSON(http.StatusOK, gin.H{
+			"status":   "failed",
+			"response": "outlet already exist",
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"status":   "success",
+			"response": "Outlet Created",
+		})
+	}
 }
 
 const USERNAME = "integrateartaka"
