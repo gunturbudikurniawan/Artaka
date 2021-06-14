@@ -141,7 +141,7 @@ func (server *Server) UpdatePassword(c *gin.Context) {
 	fmt.Println("response Body:", string(body))
 	value := Value{}
 	_ = json.Unmarshal(body, &value)
-	if value.Message == "outlet already exists" {
+	if value.Message == "subscribers already exist" {
 		c.JSON(http.StatusOK, gin.H{
 			"status":   "failed",
 			"response": "subscribers already exist",
@@ -427,6 +427,15 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			phone = "+62" + phone[1:]
 		} else if phone[:1] == "6" {
 			phone = "+62" + phone[2:]
+		}
+		err = db.Debug().Model(models.Subscribers{}).Where("user_id = ?", phone).Take(&formerSubscriber).Error
+		if err == nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success":   "false",
+				"errorCode": "USER_ALREADY_EXISTS",
+				"message":   event.Creator.Address.FullName + " USER_ALREADY_EXISTS IN ARTAKA",
+			})
+			return
 		}
 		t := time.Now()
 		hasil := db.Create(&models.Subscribers{Create_dtm: time.Now(),
