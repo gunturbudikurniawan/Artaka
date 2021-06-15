@@ -437,7 +437,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			})
 			return
 		}
-		t := time.Now()
 		hasil := db.Create(&models.Subscribers{Create_dtm: time.Now(),
 			User_id:          phone,
 			Email:            event.Creator.Email,
@@ -450,7 +449,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			Bank_name:        "",
 			Bank_account:     "",
 			Idcard_image:     json.RawMessage(`["https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"]`),
-			Referral_code:    event.Creator.Address.Phone + t.Format("01022006")})
+			Referral_code:    "99%USAHAKU"})
 
 		tokenInfo, err := CreateToken(hasil.Value.(*models.Subscribers).ID, event.Creator.Email, event.Creator.FirstName, phone)
 		if err != nil {
