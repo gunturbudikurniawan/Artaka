@@ -12,6 +12,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+///tetster
 // struct admin
 type Admin struct {
 	ID              uint32    `gorm:"primary_key;auto_increment" json:"id"`
