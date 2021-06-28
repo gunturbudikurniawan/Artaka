@@ -1,6 +1,31 @@
 package controllers
 
 func (s *Server) initialRoutes() {
+	// manager := manage.NewDefaultManager()
+
+	// // token store
+	// manager.MustTokenStorage(store.NewFileTokenStore("data.db"))
+
+	// // client store
+	// clientStore := store.NewClientStore()
+	// clientStore.Set("000000", &models.Client{
+	// 	ID:     "000000",
+	// 	Secret: "999999",
+	// 	Domain: "http://localhost",
+	// })
+	// manager.MapClientStorage(clientStore)
+
+	// // Initialize the oauth2 service
+	// ginserver.InitServer(manager)
+	// ginserver.SetAllowGetAccessRequest(true)
+	// ginserver.SetClientInfoHandler(server.ClientFormHandler)
+
+	// g := gin.Default()
+
+	// auth := g.Group("/oauth2")
+	// {
+	// 	auth.GET("/token", ginserver.HandleTokenRequest)
+	// }
 	v1 := s.Router.Group("/api/admin")
 	{
 		v1.GET("/transactionsaved", s.GetLastSaved)
@@ -19,11 +44,18 @@ func (s *Server) initialRoutes() {
 		v1.PUT("/update/:id", s.UpdateAdmin)
 
 	}
+	usahaku99 := s.Router.Group("/oauth2")
+	{
+		usahaku99.POST("/token", s.GetToken)
 
+	}
 	v2 := s.Router.Group("/api/merchant")
 	{
-		v2.POST("/regis", s.CreateUsahaku)
+		v2.GET("/regis", s.CreateUsahaku)
 		v2.POST("/update", s.UpdatePassword)
+		v2.POST("/outlet", s.UpdateOutlet)
+		v2.GET("/:user_id", s.GetMerchant1)
+		v2.GET("/get/:referral_code", s.GetbyRef)
 
 		v2.POST("/register", s.CreateMerchants)
 		v2.POST("/login", s.LoginMerchant)

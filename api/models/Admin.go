@@ -12,7 +12,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// Admin struct
+// struct admin
 type Admin struct {
 	ID              uint32    `gorm:"primary_key;auto_increment" json:"id"`
 	Phone           string    `gorm:"size:100;" json:"phone"`
