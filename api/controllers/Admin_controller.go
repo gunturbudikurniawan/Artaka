@@ -192,6 +192,8 @@ func (server *Server) UpdateAdmin(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, restErr)
 		return
 	}
+
+	// Testing
 	tokenID, _, _, err := auth.ExtractTokenID(c.Request)
 	if err != nil {
 		errList["Unauthorized"] = "Unauthorized"
