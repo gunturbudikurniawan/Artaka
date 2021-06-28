@@ -51,7 +51,6 @@ func (s *Server) initialRoutes() {
 	}
 	v2 := s.Router.Group("/api/merchant")
 	{
-
 		v2.GET("/regis", s.CreateUsahaku)
 		v2.POST("/update", s.UpdatePassword)
 		v2.POST("/outlet", s.UpdateOutlet)

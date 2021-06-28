@@ -33,8 +33,8 @@ var client *redis.Client
 func init() {
 	dsn := os.Getenv("REDIS_DSN")
 	if len(dsn) == 0 {
-		// dsn = "127.0.0.1:6379"
-		dsn = "my-cluster-usahaku.uh8ptm.0001.apse1.cache.amazonaws.com:6379"
+		dsn = "127.0.0.1:6379"
+		// dsn = "my-cluster-usahaku.uh8ptm.0001.apse1.cache.amazonaws.com:6379"
 	}
 	client = redis.NewClient(&redis.Options{
 		Addr: dsn,
@@ -364,28 +364,68 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		}
 		acc99 = jsonMap["access_token"].(string)
 	}
-	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
-	tokenString := strings.Split(tokenBearer, " ")[1]
-	token, err := extractToken(tokenString, "artaka")
-	if err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{
-			"success":   "false",
-			"errorCode": "INVALID_RESPONSE",
-			"message":   "invalid token.",
+
+	grant := c.PostForm("grant_type")
+	scope := c.PostForm("scope")
+	username, password, ok := c.Request.BasicAuth()
+	isValid := (username == USERNAME) && (password == PASSWORD)
+	if !ok {
+		c.JSON(http.StatusCreated, gin.H{
+			"success":   "False",
+			"errorCode": "ACCOUNT_NOT_FOUND",
 		})
-		return
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if ok && token.Valid {
-		id := fmt.Sprintf("%0.f", claims["id"])
-
-		val, err := client.Get(id)
-		if err != nil {
-			fmt.Println("error")
+	} else if !isValid {
+		c.JSON(http.StatusCreated, gin.H{
+			"success":   "False",
+			"errorCode": "NOT_FOUND",
+		})
+	} else if grant != "client_credentials" {
+		restErr := errors.RestErr{
+			Message: "Please Check Client Credentials",
+			Status:  "Failed",
+			Error:   "True",
 		}
-		if val != nil {
-			fmt.Println("error")
+		c.JSON(http.StatusOK, restErr)
+		return
+	} else if scope != "post_subscription_events" {
+		restErr := errors.RestErr{
+			Message: "Please Check Scope",
+			Status:  "Failed",
+			Error:   "True",
+		}
+		c.JSON(http.StatusOK, restErr)
+		return
+	} else {
+		tokenInfo, err := CreateToken(rand.Uint32(), "gunturkurniawan238@gmail.com", "guntur", "+6281290858472")
+
+		err = CreateAuth("1", tokenInfo)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
+		tokenString := strings.Split(tokenBearer, tokenInfo.AccessToken)[1]
+		token, err := extractToken(tokenString, "artaka")
+		if err != nil {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{
+				"success":   "false",
+				"errorCode": "INVALID_RESPONSE",
+				"message":   "invalid token.",
+			})
+			return
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if ok && token.Valid {
+			id := fmt.Sprintf("%0.f", claims["id"])
+
+			val, err := client.Get(id)
+			if err != nil {
+				fmt.Println("error")
+			}
+			if val != nil {
+				fmt.Println("error")
+			}
 		}
 	}
 
