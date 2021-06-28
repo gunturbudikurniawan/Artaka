@@ -1,31 +1,7 @@
 package controllers
 
 func (s *Server) initialRoutes() {
-	// manager := manage.NewDefaultManager()
 
-	// // token store
-	// manager.MustTokenStorage(store.NewFileTokenStore("data.db"))
-
-	// // client store
-	// clientStore := store.NewClientStore()
-	// clientStore.Set("000000", &models.Client{
-	// 	ID:     "000000",
-	// 	Secret: "999999",
-	// 	Domain: "http://localhost",
-	// })
-	// manager.MapClientStorage(clientStore)
-
-	// // Initialize the oauth2 service
-	// ginserver.InitServer(manager)
-	// ginserver.SetAllowGetAccessRequest(true)
-	// ginserver.SetClientInfoHandler(server.ClientFormHandler)
-
-	// g := gin.Default()
-
-	// auth := g.Group("/oauth2")
-	// {
-	// 	auth.GET("/token", ginserver.HandleTokenRequest)
-	// }
 	v1 := s.Router.Group("/api/admin")
 	{
 		v1.GET("/transactionsaved", s.GetLastSaved)
