@@ -33,7 +33,8 @@ var client *redis.Client
 func init() {
 	dsn := os.Getenv("REDIS_DSN")
 	if len(dsn) == 0 {
-		dsn = os.Getenv("DSNN")
+		// dsn = "127.0.0.1:6379"
+		dsn = "my-cluster-usahaku.uh8ptm.0001.apse1.cache.amazonaws.com:6379"
 	}
 	client = redis.NewClient(&redis.Options{
 		Addr: dsn,
@@ -240,11 +241,14 @@ func (server *Server) UpdateOutlet(c *gin.Context) {
 	}
 }
 
+const USERNAME = "integrateartaka"
+const PASSWORD = "gKOAFuXVSjOzUnzjTeMe"
+
 func (server *Server) GetToken(c *gin.Context) {
 	grant := c.PostForm("grant_type")
 	scope := c.PostForm("scope")
 	username, password, ok := c.Request.BasicAuth()
-	isValid := (username == os.Getenv("USERNAME")) && (password == os.Getenv("PASSWORD"))
+	isValid := (username == USERNAME) && (password == PASSWORD)
 	if !ok {
 		c.JSON(http.StatusCreated, gin.H{
 			"success":   "False",
@@ -364,7 +368,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	grant := c.PostForm("grant_type")
 	scope := c.PostForm("scope")
 	username, password, ok := c.Request.BasicAuth()
-	isValid := (username == os.Getenv("USERNAME")) && (password == os.Getenv("PASSWORD"))
+	isValid := (username == USERNAME) && (password == PASSWORD)
 	if !ok {
 		c.JSON(http.StatusCreated, gin.H{
 			"success":   "False",
