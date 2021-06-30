@@ -441,15 +441,15 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	event := models.Event{}
 	respBody, _ := ioutil.ReadAll(resp1.Body)
 	_ = json.Unmarshal(respBody, &event)
-	formerSubscriber := models.Subscribers{}
+	// formerSubscriber := models.Subscribers{}
 	if event.Type == "SUBSCRIPTION_ORDER" {
 
-		err = db.Debug().Model(models.Subscribers{}).Where("email = ?", event.Creator.Email).Take(&formerSubscriber).Error
+		// err = db.Debug().Model(models.Subscribers{}).Where("email = ?", event.Creator.Email).Take(&formerSubscriber).Error
 		if err == nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success":   "false",
-				"errorCode": "USER_ALREADY_EXISTS",
-				"message":   event.Creator.Address.FullName + " USER_ALREADY_EXISTS IN ARTAKA",
+				"errorCode": "Object Not Found",
+				"message":   " Error Read Event URL",
 			})
 			return
 		}
@@ -468,15 +468,15 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		} else if phone[:1] == "6" {
 			phone = "+62" + phone[2:]
 		}
-		err = db.Debug().Model(models.Subscribers{}).Where("user_id = ?", phone).Take(&formerSubscriber).Error
-		if err == nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success":   "false",
-				"errorCode": "USER_ALREADY_EXISTS",
-				"message":   event.Creator.Address.FullName + " USER_ALREADY_EXISTS IN ARTAKA",
-			})
-			return
-		}
+		// err = db.Debug().Model(models.Subscribers{}).Where("user_id = ?", phone).Take(&formerSubscriber).Error
+		// if err == nil {
+		// 	c.JSON(http.StatusOK, gin.H{
+		// 		"success":   "false",
+		// 		"errorCode": "USER_ALREADY_EXISTS",
+		// 		"message":   event.Creator.Address.FullName + " USER_ALREADY_EXISTS IN ARTAKA",
+		// 	})
+		// 	return
+		// }
 		hasil := db.Create(&models.Subscribers{Create_dtm: time.Now(),
 			User_id:          phone,
 			Email:            event.Creator.Email,
