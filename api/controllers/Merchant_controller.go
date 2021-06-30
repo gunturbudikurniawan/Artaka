@@ -431,7 +431,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 
 	db := server.DB
 	eventURL := c.Query("eventUrl")
-	r1, err := http.NewRequest("GET", eventURL, nil)
+	r1, _ := http.NewRequest("GET", eventURL, nil)
 	r1.Header.Add("Authorization", "Bearer "+acc99)
 	resp1, _ := client.Do(r1)
 	if resp1.StatusCode != 200 {
@@ -445,14 +445,14 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	if event.Type == "SUBSCRIPTION_ORDER" {
 
 		// err = db.Debug().Model(models.Subscribers{}).Where("email = ?", event.Creator.Email).Take(&formerSubscriber).Error
-		if err == nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success":   "false",
-				"errorCode": "Object Not Found",
-				"message":   " Error Read Event URL",
-			})
-			return
-		}
+		// if err == nil {
+		// 	c.JSON(http.StatusOK, gin.H{
+		// 		"success":   "false",
+		// 		"errorCode": "Object Not Found",
+		// 		"message":   " Error Read Event URL",
+		// 	})
+		// 	return
+		// }
 
 		if event.Creator.Address.Phone == "" && event.Creator.Email == "" && event.Creator.Address.FullName == "" {
 			c.JSON(http.StatusUnprocessableEntity, gin.H{
