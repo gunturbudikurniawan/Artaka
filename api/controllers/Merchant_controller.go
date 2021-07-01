@@ -30,6 +30,7 @@ var jwtKey = []byte("my_secret_key")
 
 var client *redis.Client
 
+// caba testinggg
 func init() {
 	dsn := os.Getenv("REDIS_DSN")
 	if len(dsn) == 0 {
