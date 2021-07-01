@@ -364,7 +364,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		}
 		acc99 = jsonMap["access_token"].(string)
 	}
-
 	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
 	tokenString := strings.Split(tokenBearer, " ")[1]
 	token, err := extractToken(tokenString, "artaka")
@@ -392,6 +391,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	r1, err := http.NewRequest("GET", eventURL, nil)
 	r1.Header.Add("Authorization", "Bearer "+acc99)
 	resp1, _ := client.Do(r1)
+	fmt.Println(resp1)
 	if resp1.StatusCode != 200 {
 		c.Status(http.StatusUnauthorized)
 		return
@@ -399,7 +399,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	event := models.Event{}
 	respBody, _ := ioutil.ReadAll(resp1.Body)
 	_ = json.Unmarshal(respBody, &event)
-	formerSubscriber := models.Subscribers{}
+	// formerSubscriber := models.Subscribers{}
 	if event.Type == "SUBSCRIPTION_ORDER" {
 		if event.Creator.Address.Phone == "" && event.Creator.Email == "" && event.Creator.Address.FullName == "" {
 			c.JSON(http.StatusUnprocessableEntity, gin.H{
@@ -415,15 +415,15 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		} else if phone[:1] == "6" {
 			phone = "+62" + phone[2:]
 		}
-		err = db.Debug().Model(models.Subscribers{}).Where("user_id = ?", phone).Take(&formerSubscriber).Error
-		if err == nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success":   "false",
-				"errorCode": "USER_ALREADY_EXISTS",
-				"message":   event.Creator.Address.FullName + " USER_ALREADY_EXISTS IN ARTAKA",
-			})
-			return
-		}
+		// err = db.Debug().Model(models.Subscribers{}).Where("user_id = ?", phone).Take(&formerSubscriber).Error
+		// if err == nil {
+		// 	c.JSON(http.StatusOK, gin.H{
+		// 		"success":   "false",
+		// 		"errorCode": "USER_ALREADY_EXISTS",
+		// 		"message":   event.Creator.Address.FullName + " USER_ALREADY_EXISTS IN ARTAKA",
+		// 	})
+		// 	return
+		// }
 		t := time.Now()
 		hasil := db.Create(&models.Subscribers{Create_dtm: time.Now(),
 			User_id:          phone,
