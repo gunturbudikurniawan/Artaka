@@ -337,7 +337,7 @@ type Payment struct {
 
 func (server *Server) CreateUsahaku(c *gin.Context) {
 	var acc99 string
-	apiUrl := "https://api.digitalcore.telkomsel.com/isv_fulfilment/oauth2/token"
+	apiUrl := os.Getenv("Event_url")
 	data1 := url.Values{}
 	data1.Set("grant_type", "client_credentials")
 	data1.Add("scope", "ROLE_APPLICATION")
@@ -348,7 +348,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 
 	client := &http.Client{}
 	r, _ := http.NewRequest("POST", urlStr, nil)
-	r.Header.Add("Authorization", "Basic MVAwVGhaUGZ4TDpnS09BRnVYVlNqT3pVbnpqVGVNZQ==")
+	r.Header.Add("Authorization", os.Getenv("Config_99"))
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	r.Header.Add("Content-Length", strconv.Itoa(len(data1.Encode())))
 
