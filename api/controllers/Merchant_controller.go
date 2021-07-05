@@ -242,14 +242,11 @@ func (server *Server) UpdateOutlet(c *gin.Context) {
 	}
 }
 
-const USERNAME = "integrateartaka"
-const PASSWORD = "gKOAFuXVSjOzUnzjTeMe"
-
 func (server *Server) GetToken(c *gin.Context) {
 	grant := c.PostForm("grant_type")
 	scope := c.PostForm("scope")
 	username, password, ok := c.Request.BasicAuth()
-	isValid := (username == USERNAME) && (password == PASSWORD)
+	isValid := (username == os.Getenv("USERNAME")) && (password == os.Getenv("PassConfig"))
 	if !ok {
 		c.JSON(http.StatusCreated, gin.H{
 			"success":   "False",
@@ -449,9 +446,11 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+		emailartaka := os.Getenv("Email")
+		PassEmail := os.Getenv("PassEmail")
 		if tokenInfo.AccessToken != "" {
-			from := "artakajurnal@gmail.com"
-			password := "Amazon123@"
+			from := emailartaka
+			password := PassEmail
 			to := []string{
 				event.Creator.Email,
 				"gunturkurniawan238@gmail.com",
