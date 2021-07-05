@@ -30,6 +30,7 @@ var jwtKey = []byte("my_secret_key")
 
 var client *redis.Client
 
+// caba testinggg
 func init() {
 	dsn := os.Getenv("REDIS_DSN")
 	if len(dsn) == 0 {
@@ -241,14 +242,11 @@ func (server *Server) UpdateOutlet(c *gin.Context) {
 	}
 }
 
-const USERNAME = "integrateartaka"
-const PASSWORD = "gKOAFuXVSjOzUnzjTeMe"
-
 func (server *Server) GetToken(c *gin.Context) {
 	grant := c.PostForm("grant_type")
 	scope := c.PostForm("scope")
 	username, password, ok := c.Request.BasicAuth()
-	isValid := (username == USERNAME) && (password == PASSWORD)
+	isValid := (username == os.Getenv("USERNAME")) && (password == os.Getenv("PassConfig"))
 	if !ok {
 		c.JSON(http.StatusCreated, gin.H{
 			"success":   "False",
@@ -339,7 +337,7 @@ type Payment struct {
 
 func (server *Server) CreateUsahaku(c *gin.Context) {
 	var acc99 string
-	apiUrl := "https://api.digitalcore.telkomsel.com/isv_fulfilment/oauth2/token"
+	apiUrl := os.Getenv("Event_url")
 	data1 := url.Values{}
 	data1.Set("grant_type", "client_credentials")
 	data1.Add("scope", "ROLE_APPLICATION")
@@ -350,7 +348,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 
 	client := &http.Client{}
 	r, _ := http.NewRequest("POST", urlStr, nil)
-	r.Header.Add("Authorization", "Basic MVAwVGhaUGZ4TDpnS09BRnVYVlNqT3pVbnpqVGVNZQ==")
+	r.Header.Add("Authorization", os.Getenv("Config_99"))
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	r.Header.Add("Content-Length", strconv.Itoa(len(data1.Encode())))
 
@@ -364,76 +362,34 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		}
 		acc99 = jsonMap["access_token"].(string)
 	}
-
-	grant := c.PostForm("grant_type")
-	scope := c.PostForm("scope")
-	username, password, ok := c.Request.BasicAuth()
-	isValid := (username == USERNAME) && (password == PASSWORD)
-	if !ok {
-		c.JSON(http.StatusCreated, gin.H{
-			"success":   "False",
-			"errorCode": "ACCOUNT_NOT_FOUND",
+	tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
+	tokenString := strings.Split(tokenBearer, " ")[1]
+	token, err := extractToken(tokenString, "artaka")
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
+			"success":   "false",
+			"errorCode": "INVALID_RESPONSE",
+			"message":   "invalid token.",
 		})
-	} else if !isValid {
-		c.JSON(http.StatusCreated, gin.H{
-			"success":   "False",
-			"errorCode": "NOT_FOUND",
-		})
-	} else if grant != "client_credentials" {
-		restErr := errors.RestErr{
-			Message: "Please Check Client Credentials",
-			Status:  "Failed",
-			Error:   "True",
-		}
-		c.JSON(http.StatusOK, restErr)
 		return
-	} else if scope != "post_subscription_events" {
-		restErr := errors.RestErr{
-			Message: "Please Check Scope",
-			Status:  "Failed",
-			Error:   "True",
-		}
-		c.JSON(http.StatusOK, restErr)
-		return
-	} else {
-		tokenInfo, err := CreateToken(rand.Uint32(), "gunturkurniawan238@gmail.com", "guntur", "+6281290858472")
-
-		err = CreateAuth("1", tokenInfo)
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok && token.Valid {
+		id := fmt.Sprintf("%0.f", claims["id"])
+		val, err := client.Get(id)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+			fmt.Println("error")
 		}
-		tokenBearer := strings.TrimSpace(c.Request.Header.Get("Authorization"))
-		tokenString := strings.Split(tokenBearer, tokenInfo.AccessToken)[1]
-		token, err := extractToken(tokenString, "artaka")
-		if err != nil {
-			c.JSON(http.StatusUnprocessableEntity, gin.H{
-				"success":   "false",
-				"errorCode": "INVALID_RESPONSE",
-				"message":   "invalid token.",
-			})
-			return
-		}
-
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if ok && token.Valid {
-			id := fmt.Sprintf("%0.f", claims["id"])
-
-			val, err := client.Get(id)
-			if err != nil {
-				fmt.Println("error")
-			}
-			if val != nil {
-				fmt.Println("error")
-			}
+		if val != nil {
+			fmt.Println("error")
 		}
 	}
-
 	db := server.DB
 	eventURL := c.Query("eventUrl")
 	r1, err := http.NewRequest("GET", eventURL, nil)
 	r1.Header.Add("Authorization", "Bearer "+acc99)
 	resp1, _ := client.Do(r1)
+	fmt.Println(resp1)
 	if resp1.StatusCode != 200 {
 		c.Status(http.StatusUnauthorized)
 		return
@@ -441,19 +397,8 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 	event := models.Event{}
 	respBody, _ := ioutil.ReadAll(resp1.Body)
 	_ = json.Unmarshal(respBody, &event)
-	formerSubscriber := models.Subscribers{}
+	// formerSubscriber := models.Subscribers{}
 	if event.Type == "SUBSCRIPTION_ORDER" {
-
-		err = db.Debug().Model(models.Subscribers{}).Where("email = ?", event.Creator.Email).Take(&formerSubscriber).Error
-		if err == nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success":   "false",
-				"errorCode": "USER_ALREADY_EXISTS",
-				"message":   event.Creator.Address.FullName + " USER_ALREADY_EXISTS IN ARTAKA",
-			})
-			return
-		}
-
 		if event.Creator.Address.Phone == "" && event.Creator.Email == "" && event.Creator.Address.FullName == "" {
 			c.JSON(http.StatusUnprocessableEntity, gin.H{
 				"success":   "false",
@@ -468,15 +413,16 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 		} else if phone[:1] == "6" {
 			phone = "+62" + phone[2:]
 		}
-		err = db.Debug().Model(models.Subscribers{}).Where("user_id = ?", phone).Take(&formerSubscriber).Error
-		if err == nil {
-			c.JSON(http.StatusOK, gin.H{
-				"success":   "false",
-				"errorCode": "USER_ALREADY_EXISTS",
-				"message":   event.Creator.Address.FullName + " USER_ALREADY_EXISTS IN ARTAKA",
-			})
-			return
-		}
+		// err = db.Debug().Model(models.Subscribers{}).Where("user_id = ?", phone).Take(&formerSubscriber).Error
+		// if err == nil {
+		// 	c.JSON(http.StatusOK, gin.H{
+		// 		"success":   "false",
+		// 		"errorCode": "USER_ALREADY_EXISTS",
+		// 		"message":   event.Creator.Address.FullName + " USER_ALREADY_EXISTS IN ARTAKA",
+		// 	})
+		// 	return
+		// }
+		t := time.Now()
 		hasil := db.Create(&models.Subscribers{Create_dtm: time.Now(),
 			User_id:          phone,
 			Email:            event.Creator.Email,
@@ -489,8 +435,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			Bank_name:        "",
 			Bank_account:     "",
 			Idcard_image:     json.RawMessage(`["https://www.generationsforpeace.org/wp-content/uploads/2018/07/empty.jpg"]`),
-			Referral_code:    "99%USAHAKU"})
-
+			Referral_code:    event.Creator.Address.Phone + t.Format("01022006")})
 		tokenInfo, err := CreateToken(hasil.Value.(*models.Subscribers).ID, event.Creator.Email, event.Creator.FirstName, phone)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -501,10 +446,11 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-
+		emailartaka := os.Getenv("Email")
+		PassEmail := os.Getenv("PassEmail")
 		if tokenInfo.AccessToken != "" {
-			from := "artakajurnal@gmail.com"
-			password := "Amazon123@"
+			from := emailartaka
+			password := PassEmail
 			to := []string{
 				event.Creator.Email,
 				"gunturkurniawan238@gmail.com",
@@ -540,7 +486,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 				}
 				if err == nil {
 					in := Payment{
-						User_id:        "+6282210068315",
+						User_id:        phone,
 						Payment_status: "Not Paid",
 					}
 					b, err := json.Marshal(in)
@@ -550,9 +496,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 					}
 					var jsonstr = []byte(b)
 					req, err := http.NewRequest("POST", "https://artaka-api.com/api/paymentstatus99/set", bytes.NewBuffer(jsonstr))
-
 					req.Header.Set("Content-Type", "application/json")
-
 					client := &http.Client{}
 					resp, err := client.Do(req)
 					if err != nil {
@@ -568,7 +512,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 					}
 					c.JSON(http.StatusOK, result)
 				}
-
 			} else if event.Payload.Notice.Type == "REACTIVATED" {
 				phone := event.Creator.Address.Phone
 				if phone[:1] == "0" {
@@ -577,7 +520,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 					phone = "+62" + phone[2:]
 				}
 				in := Payment{
-					User_id:        "+6282210068315",
+					User_id:        phone,
 					Payment_status: "Paid",
 				}
 				b, err := json.Marshal(in)
@@ -587,9 +530,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 				}
 				var jsonstr = []byte(b)
 				req, err := http.NewRequest("POST", "https://artaka-api.com/api/paymentstatus99/set", bytes.NewBuffer(jsonstr))
-
 				req.Header.Set("Content-Type", "application/json")
-
 				client := &http.Client{}
 				resp, err := client.Do(req)
 				if err != nil {
@@ -613,7 +554,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 					phone = "+62" + phone[2:]
 				}
 				in := Payment{
-					User_id:        "+6282210068315",
+					User_id:        phone,
 					Payment_status: "Not Paid",
 				}
 				b, err := json.Marshal(in)
@@ -623,9 +564,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 				}
 				var jsonstr = []byte(b)
 				req, err := http.NewRequest("POST", "https://artaka-api.com/api/paymentstatus99/set", bytes.NewBuffer(jsonstr))
-
 				req.Header.Set("Content-Type", "application/json")
-
 				client := &http.Client{}
 				resp, err := client.Do(req)
 				if err != nil {
@@ -641,7 +580,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 				}
 				c.JSON(http.StatusOK, result)
 			}
-
 		} else if event.Type == "SUBSCRIPTION_CANCEL" {
 			phone := event.Creator.Address.Phone
 			if phone[:1] == "0" {
@@ -650,7 +588,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 				phone = "+62" + phone[2:]
 			}
 			in := Payment{
-				User_id:        "+6282210068315",
+				User_id:        phone,
 				Payment_status: "Not Paid",
 			}
 			b, err := json.Marshal(in)
@@ -660,9 +598,7 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			}
 			var jsonstr = []byte(b)
 			req, err := http.NewRequest("POST", "https://artaka-api.com/api/paymentstatus99/set", bytes.NewBuffer(jsonstr))
-
 			req.Header.Set("Content-Type", "application/json")
-
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			if err != nil {
@@ -679,7 +615,6 @@ func (server *Server) CreateUsahaku(c *gin.Context) {
 			c.JSON(http.StatusOK, result)
 		}
 	}
-
 }
 
 type smtpServer struct {
